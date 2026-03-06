@@ -134,3 +134,22 @@ DB_LENSA_KHUSUS = [
     "85mm Macro f/1.4 (Bokeh, fokus sangat dekat pada tekstur material)",
     "Drone Hasselblad 24mm eq (Khusus Aerial/Bird Eye View)"
 ]
+# --- TAMBAHAN AKHIR FASE 2: TAPAK & VEGETASI ---
+
+DB_TAPAK = [
+    "Dense Urban Infill (Perkotaan padat, diapit gedung lain)",
+    "Suburban Neighborhood (Perumahan asri, jalan aspal)",
+    "Cliffside Ocean View (Tebing berbatu menghadap laut)",
+    "Sloping Forest Terrain (Lereng bukit di dalam hutan)",
+    "Minimalist Concrete Plaza (Alun-alun beton / Hardscape bersih)",
+    "Desert / Arid Environment (Gurun pasir atau tanah kering)"
+]
+
+DB_VEGETASI = [
+    "Lush Tropical (Palem, Monstera, Pakis, rimbun hijau)",
+    "Zen Japanese Garden (Bonsai, Maple, Bambu, kerikil putih)",
+    "Alpine / Pine Forest (Pohon Pinus, Cemara, nuansa dingin)",
+    "Minimalist Manicured Lawn (Rumput potong rapi, semak kotak)",
+    "Arid / Desert (Kaktus, Sukulen, Agave, tanpa rumput)",
+    "None / Pure Hardscape (Tanpa tanaman, fokus pada material keras)"
+]
