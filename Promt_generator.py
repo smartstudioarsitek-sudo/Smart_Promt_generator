@@ -29,6 +29,9 @@ if 'init' not in st.session_state:
     st.session_state.use_sketch = False
     st.session_state.use_ref = False
     st.session_state.generated_prompt = ""
+    st.session_state.weathering = db.DB_WEATHERING[0]
+    st.session_state.kamera_film = db.DB_KAMERA_FILM[0]
+    st.session_state.lensa_khusus = db.DB_LENSA_KHUSUS[0]
 
 def handle_random():
     s = st.session_state
@@ -74,7 +77,14 @@ with col_left:
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
         st.session_state.gaya = st.selectbox("Gaya Arsitektur", db.DB_GAYA, index=db.DB_GAYA.index(st.session_state.gaya))
         st.session_state.material = st.selectbox("Material Utama (PBR)", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
+        
+        # Tambahan Fase 2: Weathering
+        st.session_state.weathering = st.selectbox("Kondisi Fisik / Keausan Material", db.DB_WEATHERING, index=db.DB_WEATHERING.index(st.session_state.weathering))
+        
         st.session_state.detail = st.text_area("Detail Spesifik Khusus (Struktur/Bentuk)", value=st.session_state.detail, height=80)
+
+    # ... (Biarkan tab2 dan tab3 seperti aslinya) ...
+    
 
     with tab2:
         st.session_state.temp_warna = st.selectbox("Suhu Warna Lampu (Kelvin)", db.DB_TEMP_WARNA, index=db.DB_TEMP_WARNA.index(st.session_state.temp_warna))
@@ -103,9 +113,15 @@ with col_left:
 
     with tab4:
         st.session_state.view = st.selectbox("Kamera & Perspektif", db.DB_VIEW, index=db.DB_VIEW.index(st.session_state.view))
+        
+        # Tambahan Fase 2: Lensa & Kamera
+        st.session_state.lensa_khusus = st.selectbox("Lensa Arsitektur Khusus", db.DB_LENSA_KHUSUS, index=db.DB_LENSA_KHUSUS.index(st.session_state.lensa_khusus))
+        st.session_state.kamera_film = st.selectbox("Jenis Kamera & Film Stock", db.DB_KAMERA_FILM, index=db.DB_KAMERA_FILM.index(st.session_state.kamera_film))
+        
         st.session_state.rasio = st.selectbox("Rasio Gambar", list(db.DB_RASIO.keys()), index=list(db.DB_RASIO.keys()).index(st.session_state.rasio))
         st.session_state.presentasi = st.selectbox("Gaya Render", list(db.DB_PRESENTASI.keys()), index=list(db.DB_PRESENTASI.keys()).index(st.session_state.presentasi))
         st.session_state.engine = st.selectbox("Render Engine", db.DB_ENGINE, index=db.DB_ENGINE.index(st.session_state.engine))
+    
 
     st.markdown("---")
     col_cb1, col_cb2 = st.columns(2)
