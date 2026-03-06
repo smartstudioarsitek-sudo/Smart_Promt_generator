@@ -187,3 +187,18 @@ DB_PRESETS = {
         "weathering": "Natural Patina & Aging (Oksidasi alami, lumut tipis di area lembap)"
     }
 }
+# --- FASE 4: CINEMATIC VIDEO & STORYTELLING ---
+DB_CAMERA_MOTION = [
+    "Static Shot with Micro-Dynamics (Kamera diam, hanya elemen alam yang bergerak)",
+    "Slow Dolly-In (Kamera perlahan maju mendekati bangunan secara dramatis)",
+    "Drone Tracking Shot (Kamera melayang perlahan mengikuti jalan/objek)",
+    "Low-Angle Pan (Kamera mendongak dan menoleh perlahan menampakkan fasad megah)",
+    "Rack Focus (Fokus berpindah dari daun di depan ke bangunan di belakang)"
+]
+
+DB_STORYTELLING_VIBE = [
+    "Quiet Morning Routine (Burung beterbangan lambat, angin sepoi-sepoi menggerakkan daun, nuansa damai)",
+    "Afternoon Busy Life (Orang-orang berjalan blur / motion blur, bayangan matahari bergeser perlahan)",
+    "Rainy Melancholy (Rintik hujan jatuh ke genangan air, memantulkan cahaya lampu, angin bertiup sedang)",
+    "Golden Hour Romance (Cahaya senja menyapu tekstur material, partikel debu melayang di udara, sangat sinematik)"
+]
