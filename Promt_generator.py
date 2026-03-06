@@ -3,6 +3,8 @@ import random
 import base64
 import requests
 import time
+from google import genai
+from google.genai import types
 
 # ==========================================
 # 1. DATABASE & CONFIGURATIONS
@@ -164,29 +166,46 @@ def handle_render_image():
         st.session_state.app_error = "Silakan susun prompt terlebih dahulu."
         return
         
-    endpoint = f"{BFF_BASE_URL}/api/render/image"
-    payload = {
-        "prompt": st.session_state.generated_prompt,
-        "aspectRatio": DB_RASIO[st.session_state.rasio],
-        "useSearchGrounding": st.session_state.use_grounding,
-        "sketch": st.session_state.sketch_image,
-        "style": st.session_state.style_image
-    }
-    
+    if not st.session_state.get("api_key"):
+        st.session_state.app_error = "API Key Gemini belum diisi. Silakan masukkan di Sidebar sebelah kiri."
+        return
+
     try:
-        response = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'})
-        if not response.ok:
-            err_data = response.json()
-            raise Exception(err_data.get("error", f"BFF menolak permintaan (Status {response.status_code})"))
-            
-        result = response.json()
-        if "imageBase64" in result:
-            st.session_state.render_image_base64 = result["imageBase64"]
+        # 1. Inisialisasi client resmi Google GenAI
+        client = genai.Client(api_key=st.session_state.api_key)
+        
+        # 2. Mapping rasio gambar (Imagen 3 hanya menerima rasio standar tertentu)
+        rasio_mapping = {
+            "Landscape (16:9)": "16:9",
+            "Portrait / Story (9:16)": "9:16",
+            "Square / Feed (1:1)": "1:1",
+            "Classic Photo (4:3)": "4:3",
+            "Ultra Wide (4:1)": "16:9" # Fallback aman
+        }
+        aspect_ratio = rasio_mapping.get(st.session_state.rasio, "16:9")
+        
+        # 3. Request langsung ke engine Imagen 3 tanpa dummy
+        result = client.models.generate_images(
+            model='imagen-3.0-generate-001',
+            prompt=st.session_state.generated_prompt,
+            config=types.GenerateImagesConfig(
+                number_of_images=1,
+                aspect_ratio=aspect_ratio,
+                output_mime_type="image/jpeg"
+            )
+        )
+        
+        # 4. Ekstrak gambar langsung menjadi Base64 untuk dirender UI
+        if result.generated_images:
+            image_bytes = result.generated_images[0].image.image_bytes
+            st.session_state.render_image_base64 = get_base64_of_bytes(image_bytes)
             st.session_state.app_error = None
         else:
-            raise Exception("BFF berhasil merespons, tetapi gagal memberikan format base64 gambar.")
+            raise Exception("Engine Google Imagen tidak merespons dengan data gambar.")
+            
     except Exception as e:
-        st.session_state.app_error = str(e)
+        # Menangkap error bawaan dari Google API dengan rapi
+        st.session_state.app_error = f"Sistem API Error: {str(e)}"
 
 def handle_render_image():
     if not st.session_state.generated_prompt:
