@@ -170,52 +170,48 @@ def handle_render_image():
         st.session_state.app_error = "Silakan susun prompt terlebih dahulu."
         return
 
-    # 1. Optimasi Resolusi (Diperkecil sedikit ke HD agar server tidak timeout & memicu error 530)
-    rasio_mapping = {
-        "Landscape (16:9)": (1280, 720),
-        "Portrait / Story (9:16)": (720, 1280),
-        "Square / Feed (1:1)": (1024, 1024),
-        "Classic Photo (4:3)": (1024, 768),
-        "Ultra Wide (4:1)": (1280, 320)
-    }
-    width, height = rasio_mapping.get(st.session_state.rasio, (1280, 720))
+    # Validasi HF Token
+    hf_token = st.session_state.get("hf_token")
+    if not hf_token:
+        st.session_state.app_error = "Hugging Face Token belum diisi. Masukkan di Sidebar sebelah kiri."
+        return
 
-    # 2. Encode prompt & buat seed
-    safe_prompt = urllib.parse.quote(st.session_state.generated_prompt)
-    seed = random.randint(1, 1000000)
-    
-    # URL Endpoint (menggunakan model flux untuk hasil paling detail)
-    endpoint = f"https://image.pollinations.ai/prompt/{safe_prompt}?width={width}&height={height}&seed={seed}&nologo=true&model=flux"
+    # Endpoint model FLUX.1-schnell (Sangat cepat & fotorealistis)
+    API_URL = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
+    headers = {"Authorization": f"Bearer {hf_token}"}
+
+    # Menggunakan metode POST, tidak ada lagi batasan panjang karakter URL!
+    payload = {
+        "inputs": st.session_state.generated_prompt,
+        "parameters": {
+            "num_inference_steps": 4 # Optimasi khusus model Schnell
+        }
+    }
 
     try:
-        # 3. KUNCI PERBAIKAN: Menambahkan User-Agent agar tidak diblokir Cloudflare
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
-        }
+        # Timeout 60 detik karena model gambar kadang butuh waktu
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
         
-        # Tambahkan timeout 30 detik untuk berjaga-jaga
-        response = requests.get(endpoint, headers=headers, timeout=30)
-        
-        if not response.ok:
-            raise Exception(f"Server eksternal penuh atau menolak permintaan (Status {response.status_code})")
-            
-        # 4. Konversi gambar ke Base64
+        # Penanganan status khusus Hugging Face
+        if response.status_code == 503:
+            raise Exception("Model sedang di-load oleh server (Cold Start). Silakan tunggu 10 detik dan klik Render lagi.")
+        elif not response.ok:
+            raise Exception(f"Server Error (Status {response.status_code}): {response.text}")
+
+        # Konversi output langsung ke Base64
         image_bytes = response.content
-        b64_image = base64.b64encode(image_bytes).decode('utf-8')
-        
-        st.session_state.render_image_base64 = b64_image
+        st.session_state.render_image_base64 = base64.b64encode(image_bytes).decode('utf-8')
         st.session_state.app_error = None
             
     except Exception as e:
         st.session_state.app_error = f"Render API Error: {str(e)}"
 
-# Fungsi ini ditambahkan agar tombol GENERATE VIDEO tidak membuat aplikasi crash
 def handle_trigger_video():
     if not st.session_state.render_image_base64:
         st.session_state.app_error = "Render gambar terlebih dahulu."
         return
-    st.session_state.app_error = "Fitur Video sedang dalam tahap penyambungan API..."
-    # Nanti kita bisa pasang integrasi model Veo 3.0 di sini
+    st.session_state.app_error = "Sistem Video sedang dalam tahap penyambungan API..."
+
 
 # ==========================================
 # 5. UI RENDER (Streamlit Layout)
@@ -224,38 +220,31 @@ st.set_page_config(page_title="Smart Arch Studio v2.1", layout="wide", initial_s
 # --- SIDEBAR UNTUK API KEY ---
 with st.sidebar:
     st.header("🔑 Konfigurasi API")
-    st.session_state.api_key = st.text_input("Masukkan Gemini API Key", type="password")
-    st.markdown("[Dapatkan API Key di Google AI Studio](https://aistudio.google.com/app/apikey)")
+    st.session_state.api_key = st.text_input("Gemini API Key (Teks/Analisa)", type="password")
+    
+    st.markdown("---")
+    st.session_state.hf_token = st.text_input("Hugging Face Token (Render Gambar)", type="password")
+    st.markdown("[Dapatkan HF Token Gratis di sini](https://huggingface.co/settings/tokens)")
+    
     st.markdown("---")
     st.subheader("📡 Diagnostic Scanner")
     
     if st.button("Deteksi Model Tersedia", use_container_width=True):
         if not st.session_state.get("api_key"):
-            st.error("Masukkan API Key terlebih dahulu di atas.")
+            st.error("Masukkan Gemini API Key terlebih dahulu di atas.")
         else:
             with st.spinner("Mendeteksi..."):
                 api_key = st.session_state.api_key
                 url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
-                
                 try:
                     response = requests.get(url)
                     if response.ok:
                         models = response.json().get("models", [])
-                        
-                        # Kita filter dan tampilkan semua model yang aktif
                         st.success(f"Ditemukan {len(models)} model aktif!")
-                        
                         with st.expander("Lihat Daftar Lengkap Model", expanded=True):
                             for m in models:
                                 name = m.get("name", "").replace("models/", "")
-                                methods = m.get("supportedGenerationMethods", [])
-                                
-                                # Highlight model gambar jika ada
-                                if "imagen" in name.lower():
-                                    st.markdown(f"🎨 **{name}**")
-                                    st.caption(f"Metode: {', '.join(methods)}")
-                                else:
-                                    st.markdown(f"📄 {name}")
+                                st.markdown(f"📄 {name}")
                     else:
                         st.error(f"Gagal mendeteksi. Server membalas: {response.status_code}")
                 except Exception as e:
