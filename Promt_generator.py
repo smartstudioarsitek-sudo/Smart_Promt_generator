@@ -42,7 +42,8 @@ if 'init' not in st.session_state:
     # --- TAMBAHAN FASE 4: VIDEO ---
     st.session_state.mode_render = "📸 Image (Still Photo)"
     st.session_state.camera_motion = db.DB_CAMERA_MOTION[0]
-    st.session_state.storytelling_vibe = db.DB_STORYTELLING_VIBE[0]
+    st.session_state.storytelling_vibe = db.DB_STORYTELLING_VIBE[0]   
+    st.session_state.engine_video = db.DB_ENGINE_VIDEO[0] # TAMBAHKAN BARIS INI
 
 def handle_random():
     s = st.session_state
@@ -184,6 +185,8 @@ with col_left:
         if "Video" in st.session_state.mode_render:
             st.markdown('<div class="section-title">🎥 Cinematic Director (Video Motion)</div>', unsafe_allow_html=True)
             st.info("💡 Mode Video aktif! Prompt ini sangat cocok untuk Luma Dream Machine, Runway Gen-3, atau Sora.")
+            # TAMBAHKAN PEMILIH ENGINE VIDEO DI SINI
+            st.session_state.engine_video = st.selectbox("Engine Video Target (Lapisan Temporal)", db.DB_ENGINE_VIDEO, index=db.DB_ENGINE_VIDEO.index(st.session_state.engine_video))
             st.session_state.camera_motion = st.selectbox("Koreografi Kamera", db.DB_CAMERA_MOTION, index=db.DB_CAMERA_MOTION.index(st.session_state.camera_motion))
             st.session_state.storytelling_vibe = st.selectbox("Nyawa & Suasana", db.DB_STORYTELLING_VIBE, index=db.DB_STORYTELLING_VIBE.index(st.session_state.storytelling_vibe))
             st.markdown("---")
