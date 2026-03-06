@@ -219,7 +219,7 @@ const App = () => {
     if (!file) return;
     setAppErrorMsg(null);
     
-    // Validasi ukuran untuk model 3.1 Flash (Maks 7MB)
+    # Validasi ukuran untuk model 3.1 Flash (Maks 7MB)
     if (file.size > 7 * 1024 * 1024) {
       setAppErrorMsg(`Ukuran file maksimal 7MB. File Anda: ${(file.size / (1024*1024)).toFixed(2)}MB`);
       return;
