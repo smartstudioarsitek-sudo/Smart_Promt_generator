@@ -5,9 +5,9 @@ import {
   Info, Upload, Lock, Unlock, X, AlertCircle, Video, CheckCircle
 } from 'lucide-react';
 
-// ==========================================
-// 1. DATABASE & CONFIGURATIONS
-// ==========================================
+# ==========================================
+# 1. DATABASE & CONFIGURATIONS
+# ==========================================
 const DB_TIPE = [
   "Modern Minimalist House", "Grand Mosque (Masjid)", "Tropical Villa", 
   "Industrial Office", "Futuristic Skyscraper", "Bamboo Eco-Lodge",
@@ -68,9 +68,9 @@ const DB_RASIO = {
 
 const DB_ENGINE = ["Unreal Engine 5", "V-Ray", "Octane", "Corona", "Lumion"];
 
-// ==========================================
-// 2. UTILITY FUNCTIONS
-// ==========================================
+# ==========================================
+# 2. UTILITY FUNCTIONS
+# ==========================================
 const enhanceWithPBR = (materialString) => {
   const pbrDictionary = {
     "concrete": "exposed raw concrete with micro-surface roughness and subtle moisture staining",
@@ -97,16 +97,16 @@ const fileToBase64 = (file) => {
   });
 };
 
-// ==========================================
-// 3. CUSTOM HOOK: ASYNC VIDEO POLLING
-// ==========================================
+# ==========================================
+# 3. CUSTOM HOOK: ASYNC VIDEO POLLING
+# ==========================================
 const useVideoPolling = (statusEndpoint) => {
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
   const [pollingStatus, setPollingStatus] = useState("");
   const [error, setError] = useState(null);
   
-  // Menggunakan useRef agar nilai delay persisten di dalam siklus rekursif
+  # Menggunakan useRef agar nilai delay persisten di dalam siklus rekursif
   const delayRef = useRef(5000); 
 
   const startPolling = useCallback(async (jobId) => {
@@ -114,7 +114,7 @@ const useVideoPolling = (statusEndpoint) => {
     setVideoUrl(null);
     setError(null);
     setPollingStatus("Menginisiasi render video di server...");
-    delayRef.current = 5000; // Reset delay awal (5 detik)
+    delayRef.current = 5000; # Reset delay awal (5 detik)
 
     let isPollingActive = true;
 
@@ -124,7 +124,7 @@ const useVideoPolling = (statusEndpoint) => {
       try {
         setPollingStatus("Mengecek status render video...");
         
-        // PANGGILAN PRODUKSI KE BACKEND BFF
+        # PANGGILAN PRODUKSI KE BACKEND BFF
         const response = await fetch(`${statusEndpoint}?jobId=${jobId}`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
@@ -133,19 +133,19 @@ const useVideoPolling = (statusEndpoint) => {
         if (!response.ok) throw new Error(`Server API Error: ${response.status}`);
         
         const data = await response.json();
-        // Ekspektasi respons Backend: { status: 'running' | 'completed' | 'failed', videoUrl?: 'https...' }
+        # Ekspektasi respons Backend: { status: 'running' | 'completed' | 'failed', videoUrl?: 'https...' }
 
         if (data.status === 'completed' && data.videoUrl) {
           setPollingStatus("Render Video Selesai!");
           setIsVideoReady(true);
           setVideoUrl(data.videoUrl);
-          isPollingActive = false; // Hentikan siklus
+          isPollingActive = false; # Hentikan siklus
         } else if (data.status === 'failed') {
           throw new Error(data.message || "Pembuatan video gagal di sisi penyedia AI.");
         } else {
-          // Status masih 'pending' atau 'running', terapkan Exponential Backoff
+          # Status masih 'pending' atau 'running', terapkan Exponential Backoff
           setPollingStatus(`Merender... (Pengecekan ulang dalam ${delayRef.current / 1000} detik)`);
-          delayRef.current = Math.min(delayRef.current * 1.5, 30000); // Maksimal delay 30 detik
+          delayRef.current = Math.min(delayRef.current * 1.5, 30000); # Maksimal delay 30 detik
           setTimeout(poll, delayRef.current);
         }
 
@@ -156,21 +156,21 @@ const useVideoPolling = (statusEndpoint) => {
       }
     };
 
-    // Eksekusi siklus pertama
+    # Eksekusi siklus pertama
     setTimeout(poll, delayRef.current);
 
-    return () => { isPollingActive = false; }; // Cleanup function
+    return () => { isPollingActive = false; }; # Cleanup function
   }, [statusEndpoint]);
 
   return { isVideoReady, videoUrl, pollingStatus, error, startPolling };
 };
 
 
-// ==========================================
-// 4. MAIN APPLICATION COMPONENT
-// ==========================================
+# ==========================================
+# 4. MAIN APPLICATION COMPONENT
+# ==========================================
 const App = () => {
-  // --- STATE ---
+  # --- STATE ---
   const [targetAi, setTargetAi] = useState('Gemini 3.1 Flash Image');
   const [formData, setFormData] = useState({
     tipe: DB_TIPE[0],
@@ -191,11 +191,11 @@ const App = () => {
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [renderImage, setRenderImage] = useState(null);
   
-  // Fitur Tambahan Gemini & Video
+  # Fitur Tambahan Gemini & Video
   const [useGrounding, setUseGrounding] = useState(true);
   const [motionPrompt, setMotionPrompt] = useState("Slow cinematic pan, maintaining strict structural rigidity and realistic lighting.");
 
-  // Loading States
+  # Loading States
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [isVideoGenerating, setIsVideoGenerating] = useState(false);
@@ -204,16 +204,16 @@ const App = () => {
   const fileInputSketch = useRef(null);
   const fileInputStyle = useRef(null);
 
-  // Inisiasi Custom Hook Video
+  # Inisiasi Custom Hook Video
   const { 
       isVideoReady, 
       videoUrl, 
       pollingStatus, 
       error: videoError, 
       startPolling 
-  } = useVideoPolling('/api/video/status'); // Ganti dengan endpoint BFF status video Anda
+  } = useVideoPolling('/api/video/status'); # Ganti dengan endpoint BFF status video Anda
 
-  // --- LOGIC: UPLOAD HANDLER ---
+  # --- LOGIC: UPLOAD HANDLER ---
   const handleFileUpload = async (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -254,16 +254,16 @@ const App = () => {
     }));
   };
 
-  // --- LOGIC: HIERARCHICAL PROMPT ENGINEER ---
+  # --- LOGIC: HIERARCHICAL PROMPT ENGINEER ---
   const constructPrompt = () => {
     const { tipe, gaya, material, suasana, view, rasio, presentasi, skenario, engine, detail, lockSketch } = formData;
     const styleDescription = DB_PRESENTASI[presentasi];
     
-    // 1. Deteksi Interior vs Eksterior
+    # 1. Deteksi Interior vs Eksterior
     const isInterior = view.includes("[INT]");
     const archTypeContext = isInterior ? "interior architectural space" : "exterior volumetric structure";
     
-    // 2. Terapkan PBR Mapping
+    # 2. Terapkan PBR Mapping
     const pbrMaterialDesc = enhanceWithPBR(material);
 
     let core = `Generate a high-end architectural visualization of a ${tipe}. Focus on the ${archTypeContext}. Design style: ${gaya}. `;
@@ -288,27 +288,27 @@ const App = () => {
   const handleGeneratePrompt = () => {
     setIsGenerating(true);
     setAppErrorMsg(null);
-    // Simulasi delay singkat agar UI terasa memproses
+    # Simulasi delay singkat agar UI terasa memproses
     setTimeout(() => {
       setGeneratedPrompt(constructPrompt());
       setIsGenerating(false);
     }, 400);
   };
 
-  // --- LOGIC: SECURE BFF IMAGE RENDER ---
+  # --- LOGIC: SECURE BFF IMAGE RENDER ---
   const handleRenderImage = async () => {
     if (!generatedPrompt) return;
     setIsRendering(true);
     setRenderImage(null);
     setAppErrorMsg(null);
 
-    // Klien tidak menyimpan API Key. Menembak endpoint BFF produksi.
+    # Klien tidak menyimpan API Key. Menembak endpoint BFF produksi.
     const bffImageEndpoint = "/api/render/image"; 
 
     const payload = {
       prompt: generatedPrompt,
       aspectRatio: DB_RASIO[formData.rasio],
-      useSearchGrounding: useGrounding, // Flag untuk Gemini 3.1
+      useSearchGrounding: useGrounding, # Flag untuk Gemini 3.1
       sketch: sketchImage ? { mimeType: sketchImage.mimeType, data: sketchImage.base64 } : null,
       style: styleRefImage ? { mimeType: styleRefImage.mimeType, data: styleRefImage.base64 } : null
     };
@@ -327,7 +327,7 @@ const App = () => {
 
       const result = await response.json();
       
-      // Ekspektasi BFF merespons dengan Base64 gambar
+      # Ekspektasi BFF merespons dengan Base64 gambar
       if (result.imageBase64) {
         setRenderImage(`data:image/jpeg;base64,${result.imageBase64}`);
       } else {
@@ -341,7 +341,7 @@ const App = () => {
     }
   };
 
-  // --- LOGIC: IMAGE TO VIDEO (I2V) TRIGGER ---
+  # --- LOGIC: IMAGE TO VIDEO (I2V) TRIGGER ---
   const handleTriggerVideo = async () => {
     if (!renderImage) return;
     setIsVideoGenerating(true);
@@ -352,7 +352,7 @@ const App = () => {
     const payload = {
         baseImage: renderImage, 
         motionPrompt: motionPrompt,
-        duration: "standard" // Parameter tambahan untuk API Kling/Runway
+        duration: "standard" # Parameter tambahan untuk API Kling/Runway
     };
 
     try {
@@ -370,7 +370,7 @@ const App = () => {
         const result = await response.json();
         
         if (result.jobId) {
-            // Memulai proses polling ke BFF menggunakan custom hook
+            # Memulai proses polling ke BFF menggunakan custom hook
             startPolling(result.jobId);
         } else {
             throw new Error("BFF tidak mengembalikan Job ID yang valid.");
@@ -382,7 +382,7 @@ const App = () => {
     }
   };
 
-  // Manajemen Status Peringatan Hook Video
+  # Manajemen Status Peringatan Hook Video
   useEffect(() => {
     if (isVideoReady || videoError) {
         setIsVideoGenerating(false);
@@ -390,9 +390,9 @@ const App = () => {
     }
   }, [isVideoReady, videoError]);
 
-  // ==========================================
-  // 5. JSX RENDER
-  // ==========================================
+  # ==========================================
+  # 5. JSX RENDER
+  # ==========================================
   return (
     <div className="min-h-screen bg-[#fcfcfd] text-[#1a1c1e] font-sans pb-28">
       {/* --- NAVBAR --- */}
