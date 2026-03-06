@@ -188,60 +188,63 @@ def handle_render_image():
     except Exception as e:
         st.session_state.app_error = str(e)
 
-def handle_trigger_video():
-    if not st.session_state.render_image_base64:
-        st.session_state.app_error = "Harap render gambar terlebih dahulu sebelum membuat video."
+def handle_render_image():
+    if not st.session_state.generated_prompt:
+        st.session_state.app_error = "Silakan susun prompt terlebih dahulu."
         return
         
-    start_endpoint = f"{BFF_BASE_URL}/api/video/start"
-    status_endpoint = f"{BFF_BASE_URL}/api/video/status"
+    if not st.session_state.get("api_key"):
+        st.session_state.app_error = "API Key Gemini belum diisi. Silakan masukkan di Sidebar sebelah kiri."
+        return
+
+    # Endpoint resmi Imagen 3 dari Google AI Studio
+    api_key = st.session_state.api_key
+    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key={api_key}"
     
+    # Mapping rasio gambar ke format yang didukung Imagen 3
+    rasio_mapping = {
+        "Landscape (16:9)": "16:9",
+        "Portrait / Story (9:16)": "9:16",
+        "Square / Feed (1:1)": "1:1",
+        "Classic Photo (4:3)": "4:3",
+        "Ultra Wide (4:1)": "16:9" # Fallback karena 4:1 tidak didukung secara native
+    }
+    aspect_ratio = rasio_mapping.get(st.session_state.rasio, "16:9")
+    
+    # Struktur Payload sesuai standar API Google
     payload = {
-        "baseImage": f"data:image/jpeg;base64,{st.session_state.render_image_base64}",
-        "motionPrompt": st.session_state.motion_prompt,
-        "duration": "standard"
+        "instances": [
+            {"prompt": st.session_state.generated_prompt}
+        ],
+        "parameters": {
+            "sampleCount": 1,
+            "aspectRatio": aspect_ratio
+        }
     }
     
     try:
-        response = requests.post(start_endpoint, json=payload, headers={'Content-Type': 'application/json'})
+        response = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'})
+        
+        # Tangkap error jika API Key salah atau ada masalah server
         if not response.ok:
             err_data = response.json()
-            raise Exception(err_data.get("error", f"BFF Gagal memulai tugas video (Status {response.status_code})"))
+            error_msg = err_data.get("error", {}).get("message", f"HTTP {response.status_code}")
+            raise Exception(f"Gemini API Error: {error_msg}")
             
         result = response.json()
-        job_id = result.get("jobId")
         
-        if not job_id:
-            raise Exception("BFF tidak mengembalikan Job ID yang valid.")
-            
-        # Video Polling Loop
-        delay = 5.0
-        is_polling = True
-        
-        status_placeholder = st.empty()
-        
-        while is_polling:
-            status_placeholder.info(f"Mengecek status render video (Job ID: {job_id})...")
-            res_status = requests.get(f"{status_endpoint}?jobId={job_id}")
-            if not res_status.ok:
-                raise Exception(f"Server API Error saat polling: {res_status.status_code}")
-                
-            data = res_status.json()
-            status = data.get("status")
-            
-            if status == "completed" and data.get("videoUrl"):
-                st.session_state.video_url = data["videoUrl"]
-                status_placeholder.success("Render Video Selesai!")
-                time.sleep(2)
-                status_placeholder.empty()
-                is_polling = False
-            elif status == "failed":
-                raise Exception(data.get("message", "Pembuatan video gagal di sisi penyedia AI."))
+        # Imagen 3 mengembalikan data gambar dalam array predictions -> bytesBase64
+        predictions = result.get("predictions")
+        if predictions and len(predictions) > 0:
+            b64_image = predictions[0].get("bytesBase64")
+            if b64_image:
+                st.session_state.render_image_base64 = b64_image
+                st.session_state.app_error = None
             else:
-                status_placeholder.warning(f"Merender... (Pengecekan ulang dalam {delay} detik)")
-                time.sleep(delay)
-                delay = min(delay * 1.5, 30.0) # Exponential backoff max 30s
-                
+                raise Exception("Gambar gagal diproses oleh model Imagen.")
+        else:
+            raise Exception("Respons dari Gemini API kosong atau tidak sesuai format.")
+            
     except Exception as e:
         st.session_state.app_error = str(e)
 
@@ -249,6 +252,11 @@ def handle_trigger_video():
 # 5. UI RENDER (Streamlit Layout)
 # ==========================================
 st.set_page_config(page_title="Smart Arch Studio v2.1", layout="wide", initial_sidebar_state="collapsed")
+# --- SIDEBAR UNTUK API KEY ---
+with st.sidebar:
+    st.header("🔑 Konfigurasi API")
+    st.session_state.api_key = st.text_input("Masukkan Gemini API Key", type="password")
+    st.markdown("[Dapatkan API Key di Google AI Studio](https://aistudio.google.com/app/apikey)")
 
 # Custom CSS untuk warna dan styling menyerupai Tailwind
 st.markdown("""
