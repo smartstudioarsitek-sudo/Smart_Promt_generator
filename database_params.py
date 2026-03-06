@@ -208,6 +208,7 @@ DB_STORYTELLING_VIBE = [
     "Golden Hour Romance (Cahaya senja menyapu tekstur material, partikel debu melayang di udara, sangat sinematik)"
 ]
 DB_ENGINE_VIDEO = [
+    "Google Veo (Terbaik untuk Integrasi Gemini, Cinematic Motion & Native Audio)", 
     "Kling 3.0 Omni (Terbaik untuk Multi-shot & Koherensi Spasial)",
     "Luma Dream Machine (Terbaik untuk Navigasi Ruang Interior via NeRF)",
     "OpenAI Sora 2 (Terbaik untuk Transisi Skala Besar)",
