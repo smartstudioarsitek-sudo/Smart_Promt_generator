@@ -40,7 +40,15 @@ def check_conflicts(s):
     # Konflik 3: Interior tapi cuaca ekstrem tanpa konteks
     if is_interior and ("Rain" in s.cuaca or "Fog" in s.cuaca):
         conflicts.append("💡 **Saran Lingkungan:** Anda merender Interior dengan cuaca Hujan/Kabut di luar. Pastikan desain Anda memiliki jendela kaca besar agar efek cuaca ini terlihat dari dalam.")
+    # Konflik Baru: AI Murni tanpa Sketsa untuk Proyek Presisi
+    if s.uploaded_sketch is None and "Technical Concept" in s.presentasi:
+        conflicts.append("⚠️ **Peringatan Presisi Geometri:** Anda menargetkan render konseptual teknis tetapi tidak mengunggah sketsa (Vision Constraint mati). Hasil render berisiko mengalami 'halusinasi' struktural AI.")
+    
+    # Konflik Baru: Video tanpa Engine yang tepat (Jika logika UI diubah)
+    if "Video" in s.mode_render and not hasattr(s, 'engine_video'):
+        conflicts.append("⚠️ **Peringatan Koherensi Temporal:** Pastikan menggunakan prompt ini pada engine video berarsitektur NeRF (seperti Luma atau Kling) untuk menghindari flickering struktur.")
 
+    return conflicts
     return conflicts
 def construct_prompt():
     s = st.session_state
