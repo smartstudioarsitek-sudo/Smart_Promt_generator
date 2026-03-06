@@ -3,6 +3,7 @@ import random
 import base64
 import requests
 import time
+import requests
 from google import genai
 from google.genai import types
 
@@ -276,6 +277,40 @@ with st.sidebar:
     st.header("🔑 Konfigurasi API")
     st.session_state.api_key = st.text_input("Masukkan Gemini API Key", type="password")
     st.markdown("[Dapatkan API Key di Google AI Studio](https://aistudio.google.com/app/apikey)")
+    st.markdown("---")
+    st.subheader("📡 Diagnostic Scanner")
+    
+    if st.button("Deteksi Model Tersedia", use_container_width=True):
+        if not st.session_state.get("api_key"):
+            st.error("Masukkan API Key terlebih dahulu di atas.")
+        else:
+            with st.spinner("Mendeteksi..."):
+                api_key = st.session_state.api_key
+                url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+                
+                try:
+                    response = requests.get(url)
+                    if response.ok:
+                        models = response.json().get("models", [])
+                        
+                        # Kita filter dan tampilkan semua model yang aktif
+                        st.success(f"Ditemukan {len(models)} model aktif!")
+                        
+                        with st.expander("Lihat Daftar Lengkap Model", expanded=True):
+                            for m in models:
+                                name = m.get("name", "").replace("models/", "")
+                                methods = m.get("supportedGenerationMethods", [])
+                                
+                                # Highlight model gambar jika ada
+                                if "imagen" in name.lower():
+                                    st.markdown(f"🎨 **{name}**")
+                                    st.caption(f"Metode: {', '.join(methods)}")
+                                else:
+                                    st.markdown(f"📄 {name}")
+                    else:
+                        st.error(f"Gagal mendeteksi. Server membalas: {response.status_code}")
+                except Exception as e:
+                    st.error(f"Koneksi terputus: {str(e)}")
 
 # Custom CSS untuk warna dan styling menyerupai Tailwind
 st.markdown("""
