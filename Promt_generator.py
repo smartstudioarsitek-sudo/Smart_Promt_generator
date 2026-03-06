@@ -3,6 +3,12 @@ import random
 import os
 import io
 from PIL import Image
+import numpy as np
+try:
+    from streamlit_drawable_canvas import st_canvas
+    HAS_CANVAS = True
+except ImportError:
+    HAS_CANVAS = False
 
 import database_params as db
 import prompt_logic as pl
@@ -271,42 +277,33 @@ with col_left:
 
     if st.button("✨ SUSUN PROMPT NEURAL", use_container_width=True, type="primary"):
         pl.construct_prompt()
+# --- KOLOM KANAN (OUTPUT & INPAINTING) ---
 with col_right:
-    tab_out, tab_hist = st.tabs(["🖥️ Output (Prompt & Visual)", "📚 Prompt Ledger (Riwayat)"])
+    # KITA TAMBAHKAN 1 TAB BARU: 🖌️ Inpainting (Revisi)
+    tab_out, tab_inpaint, tab_hist = st.tabs(["🖥️ Output (Prompt & Visual)", "🖌️ Inpainting (Revisi)", "📚 Prompt Ledger (Riwayat)"])
     
     with tab_out:
         if st.session_state.generated_prompt:
             st.success("✅ Logika arsitektural & komposisi fotografi siap dieksekusi!")
             
-            # --- BAGIAN 1: SUTRADARA PROMPT (GRATIS & COPY-PASTE) ---
             st.markdown("#### 1️⃣ Eksekusi via Gemini Web / AI Lainnya (Gratis)")
             st.write("Klik ikon **Copy** di pojok kanan atas kotak ini, lalu *paste* ke chat AI pilihan Anda.")
             st.code(st.session_state.generated_prompt, language="markdown")
             
-            # Peringatan Alur Kerja
             if st.session_state.uploaded_sketch or st.session_state.use_ref:
                 st.warning("⚠️ **PENTING:** Karena Anda mengaktifkan *Vision Constraint* / *Color Masking*, pastikan Anda mengunggah gambar sketsa/masking tersebut secara manual ke chat AI bersamaan dengan prompt di atas!")
                 
             st.markdown("---")
             
-            # --- BAGIAN 2: RENDER API INSTAN (PAY-AS-YOU-GO) ---
             st.markdown("#### 2️⃣ Render Instan via API (Imagen 4.0)")
-            st.write("Gunakan opsi ini untuk render cepat langsung di dalam aplikasi (membutuhkan API Key dengan akses penagihan/Paid Tier aktif).")
+            st.write("Membutuhkan API Key dengan akses penagihan (Paid Tier) aktif.")
             
             if st.button("🚀 RENDER GAMBAR SEKARANG", use_container_width=True, type="primary"):
                 with st.spinner("Memproses Raytracing & Global Illumination via Imagen 4.0..."):
                     try:
-                        # Pemetaan rasio (Streamlit UI ke format API)
-                        aspect_ratio_map = {
-                            "16:9": "16:9",
-                            "9:16": "9:16",
-                            "1:1": "1:1",
-                            "4:3": "4:3",
-                            "4:1": "16:9" # Fallback
-                        }
+                        aspect_ratio_map = {"16:9": "16:9", "9:16": "9:16", "1:1": "1:1", "4:3": "4:3", "4:1": "16:9"}
                         target_ratio = aspect_ratio_map.get(db.DB_RASIO[st.session_state.rasio], "1:1")
 
-                        # Panggilan API ke Imagen 4.0
                         result = client.models.generate_images(
                             model='imagen-4.0-generate-001',
                             prompt=st.session_state.generated_prompt,
@@ -317,29 +314,96 @@ with col_right:
                             )
                         )
                         
-                        # Ekstraksi dan penayangan gambar
                         for generated_image in result.generated_images:
                             image = Image.open(io.BytesIO(generated_image.image.image_bytes))
                             st.image(image, caption=f"Render Final: {st.session_state.tipe}", use_container_width=True)
                             
-                            # Tombol Unduh
                             buf = io.BytesIO()
                             image.save(buf, format="JPEG")
                             byte_im = buf.getvalue()
                             st.download_button(
-                                label="💾 Unduh Render Resolusi Tinggi",
-                                data=byte_im,
+                                label="💾 Unduh Render Resolusi Tinggi", data=byte_im,
                                 file_name=f"Render_{st.session_state.tipe.replace(' ', '_')}.jpg",
-                                mime="image/jpeg",
-                                use_container_width=True
+                                mime="image/jpeg", use_container_width=True
                             )
                             
                     except Exception as e:
                         st.error(f"Terjadi kesalahan rendering API: {e}")
-                        st.info("💡 Jika Anda melihat pesan 'only available on paid plans', gunakan Opsi 1 (Copy Prompt) di atas.")
+                        st.info("💡 Jika muncul 'only available on paid plans', gunakan Opsi 1 (Copy Prompt) di atas.")
             
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
+            
+    # ========================================================
+    # TAB BARU: KANVAS INPAINTING (SUTRADARA REVISI)
+    # ========================================================
+    with tab_inpaint:
+        st.markdown("### 🖌️ Kanvas Revisi (Inpainting)")
+        st.info("Unggah gambar hasil render final Anda (dari Gemini/Midjourney/API), lalu 'lukis' area yang ingin direvisi.")
+        
+        if not HAS_CANVAS:
+            st.error("🚨 Pustaka `streamlit-drawable-canvas` belum terdeteksi. Silakan install via terminal: `pip install streamlit-drawable-canvas`")
+        else:
+            base_img_file = st.file_uploader("🖼️ Unggah Gambar Base Render", type=["png", "jpg", "jpeg"], key="inpaint_upload")
+            
+            if base_img_file is not None:
+                base_image = Image.open(base_img_file).convert("RGBA")
+                
+                # Skala gambar agar muat di UI (Maks lebar 600px)
+                max_width = 600
+                if base_image.width > max_width:
+                    ratio = max_width / base_image.width
+                    new_height = int(base_image.height * ratio)
+                    base_image_resized = base_image.resize((max_width, new_height))
+                else:
+                    base_image_resized = base_image
+
+                st.markdown("**1. Lukis Area Masking**")
+                col_canvas_tools, col_canvas = st.columns([1, 3])
+                
+                with col_canvas_tools:
+                    stroke_width = st.slider("Ukuran Kuas (Brush)", 10, 100, 40)
+                    st.caption("Gunakan kuas untuk menutupi area yang ingin diubah. Area yang diwarnai putih akan diproses oleh AI.")
+                
+                with col_canvas:
+                    # Komponen Kanvas Interaktif
+                    canvas_result = st_canvas(
+                        fill_color="rgba(255, 255, 255, 0.7)", # Warna isian agak transparan
+                        stroke_width=stroke_width,
+                        stroke_color="#FFFFFF", # Kuas warna putih
+                        background_image=base_image_resized,
+                        update_streamlit=True,
+                        height=base_image_resized.height,
+                        width=base_image_resized.width,
+                        drawing_mode="freedraw",
+                        key="canvas_inpainting",
+                    )
+                
+                st.markdown("---")
+                st.markdown("**2. Instruksi Mikro (The One Edit Rule)**")
+                st.write("Sesuai standar arsitektur, masukkan HANYA 1 perintah spesifik pendek (< 200 karakter) untuk area yang ditandai.")
+                
+                micro_prompt = st.text_input("Contoh: 'Change the wall paint to dark green' atau 'Add a modern leather sofa'", max_chars=200)
+                
+                if st.button("✨ Eksekusi Revisi", type="primary", use_container_width=True):
+                    # Validasi: Pastikan pengguna sudah mencoret sesuatu di kanvas
+                    if canvas_result.image_data is not None and np.any(canvas_result.image_data[:, :, 3] > 0):
+                        if micro_prompt:
+                            st.success("✅ Masker dan Instruksi berhasil ditangkap!")
+                            # Di sini nanti kita akan ekstrak maskernya dan kirim ke API Edit Image
+                            st.info(f"Mengirim instruksi: **{micro_prompt}** ke area yang di-masking... (Fungsi API Inpainting akan diintegrasikan di sini)")
+                        else:
+                            st.warning("Mohon ketik Instruksi Mikro terlebih dahulu.")
+                    else:
+                        st.warning("⚠️ Anda belum melukis area masking di atas gambar.")
+
+    with tab_hist:
+        if not st.session_state.history_ledger:
+            st.caption("Riwayat prompt Anda akan muncul di sini (Maksimal 10 terakhir).")
+        else:
+            for i, item in enumerate(st.session_state.history_ledger):
+                with st.expander(f"{item['title']} (Terbaru)" if i==0 else item['title'], expanded=(i==0)):
+                    st.code(item['prompt'], language="markdown")
             
     with tab_hist:
         if not st.session_state.history_ledger:
