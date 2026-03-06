@@ -68,10 +68,14 @@ def construct_prompt():
             if s.mask_blue: base_arch += f"- BLUE ZONE: {enhance_with_pbr(s.mask_blue)}\n"
             if s.mask_green: base_arch += f"- GREEN ZONE: {enhance_with_pbr(s.mask_green)}\n"
             if s.mask_yellow: base_arch += f"- YELLOW ZONE: {enhance_with_pbr(s.mask_yellow)}\n"
+            if s.mask_purple: base_arch += f"- PURPLE ZONE: {enhance_with_pbr(s.mask_purple)}\n"
+            if s.mask_orange: base_arch += f"- ORANGE ZONE: {enhance_with_pbr(s.mask_orange)}\n"
+            if s.mask_cyan: base_arch += f"- CYAN ZONE: {enhance_with_pbr(s.mask_cyan)}\n"
+            if s.mask_magenta: base_arch += f"- MAGENTA ZONE: {enhance_with_pbr(s.mask_magenta)}\n"
             base_arch += "CRITICAL: DO NOT mix materials across color boundaries. Maintain sharp material transitions exactly as defined by the color blocks.\n\n"
         else:
             base_arch += "\n"
-            
+                    
     if s.use_ref:
         base_arch += "Please match the overall mood, color palette, and lighting style of the ATTACHED REFERENCE IMAGE. "
 
