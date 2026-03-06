@@ -153,3 +153,29 @@ DB_VEGETASI = [
     "Arid / Desert (Kaktus, Sukulen, Agave, tanpa rumput)",
     "None / Pure Hardscape (Tanpa tanaman, fokus pada material keras)"
 ]
+# --- TAMBAHAN FASE 3: ENTERPRISE PRESETS ---
+DB_PRESETS = {
+    "Pilih Preset Bawaan...": None,
+    "🏢 Cyberpunk Skyscraper (Malam)": {
+        "tipe": "Futuristic Skyscraper", "gaya": "Zaha Hadid Style", "material": "reflective glass facade",
+        "suasana": "Cinematic Night Lighting", "cuaca": "Cinematic Cyberpunk Smog (Asap/Polusi Neon)",
+        "view": "[EXT] Worm's Eye View (Low Angle)", "temp_warna": "RGB / Neon Accents (Cyberpunk, Futuristic)",
+        "fixture_ext": "Architectural Facade Up-lighting", "teknik_cahaya": "Cinematic Volumetric Lighting (God Rays)",
+        "tapak": "Dense Urban Infill (Perkotaan padat, diapit gedung lain)", "vegetasi": "None / Pure Hardscape (Tanpa tanaman, fokus pada material keras)",
+        "rasio": "Portrait / Story (9:16)", "presentasi": "📸 Clean Photorealistic",
+        "skenario": "Standard Clear Architectural Shot", "engine": "Unreal Engine 5",
+        "lensa_khusus": "14mm Ultra-Wide Rectilinear (Interior sempit terlihat megah)", "kamera_film": "Cinematic Anamorphic (Arri Alexa, flare lensa horizontal)",
+        "weathering": "Subtle Weathering (Tanda pemakaian ringan, debu halus di sudut)"
+    },
+    "🌴 Tropical Luxury Villa (Senja)": {
+        "tipe": "Tropical Villa", "gaya": "Biophilic/Green", "material": "sustainable bamboo and stone",
+        "suasana": "Golden Hour (Sunset)", "cuaca": "Clear Blue Sky (Cerah)",
+        "view": "[EXT] Eye Level (Human View)", "temp_warna": "3000K Soft White (Nyaman, Elegan)",
+        "fixture_ext": "Warm Bollard Garden Lights & Pathway LEDs", "teknik_cahaya": "Soft Diffused Bounce Light",
+        "tapak": "Cliffside Ocean View (Tebing berbatu menghadap laut)", "vegetasi": "Lush Tropical (Palem, Monstera, Pakis, rimbun hijau)",
+        "rasio": "Landscape (16:9)", "presentasi": "📸 Clean Photorealistic",
+        "skenario": "Standard Clear Architectural Shot", "engine": "Corona",
+        "lensa_khusus": "50mm Prime Lens (Fokus detail objek, minim distorsi ruang)", "kamera_film": "Medium Format (Hasselblad, depth of field sangat detail & mewah)",
+        "weathering": "Natural Patina & Aging (Oksidasi alami, lumut tipis di area lembap)"
+    }
+}
