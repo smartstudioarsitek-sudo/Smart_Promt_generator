@@ -6,11 +6,11 @@ import database_params as db
 # prompt_logic.py (Update Fungsi PBR)
 def enhance_with_pbr(material_string):
     pbr_dictionary = {
-        "concrete": "exposed raw concrete with micro-surface roughness and subtle moisture staining",
-        "wood": "timber wood with deep matte visible grain and low specular reflectivity",
-        "kayu": "natural timber wood panels with detailed matte grain, subtle imperfections, and realistic warm bounce light", # Tambahan
-        "marble": "highly polished marble with sharp specular reflections and subsurface scattering",
-        "steel": "weathered steel with natural oxidation, high metallic value, and diffuse roughness",
+        "concrete": "exposed raw concrete with mathematical displacement maps, subtle moisture staining, and micro-surface roughness",
+        "wood": "timber wood with deep matte visible grain, authentic contact shadows, and signs of subtle aging (organized chaos)",
+        "glass": "ultra-clear architectural glass with realistic index of refraction, authentic micro-dust particles on surface, and sharp environmental reflections",
+        "marble": "highly polished marble with sharp specular reflections, subsurface scattering, and slight wear on high-traffic areas",
+        "steel": "weathered steel with natural oxidation, diffuse roughness maps, and realistic metallic micro-imperfections",
         "glass": "ultra-clear architectural glass with realistic index of refraction and sharp environmental reflections",
         "brick": "rough terracotta masonry with displacement mapping and ambient occlusion in crevices",
         "cat": "smooth matte architectural wall paint (stucco/plaster) with subtle micro-bump textures to catch sunlight realistically", # Tambahan
