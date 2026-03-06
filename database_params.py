@@ -1,10 +1,5 @@
 # database_params.py
-DB_AI_CONTROL = [
-    "Canny Edge Detection (Fokus pada garis luar fasad tegak lurus)",
-    "Depth Map (Fokus pada kedalaman ruang dan volume massa)",
-    "MLSD / Lineart (Fokus pada struktur wireframe arsitektural kaku)",
-    "Normal Map (Fokus pada topologi permukaan dan relief fasad)"
-]   
+
 DB_TIPE = [
     "Modern Minimalist House", "Grand Mosque (Masjid)", "Tropical Villa", 
     "Industrial Office", "Futuristic Skyscraper", "Bamboo Eco-Lodge",
@@ -18,6 +13,7 @@ DB_GAYA = [
     "Scandinavian (Japandi)", "Industrial",
     "Tropical Brutalism with Exposed Brick"
 ]
+
 DB_MATERIAL = [
     "Eksterior Cat Dinding (Wall Paint / Stucco)",
     "Kayu Solid (Timber / Wood Panels)",
@@ -29,11 +25,8 @@ DB_MATERIAL = [
     "reflective glass facade", 
     "weathered corten steel",
     "polished travertin stone",
-    "exposed terracotta brick, raw concrete, and warm timber wood",
-    "Eksterior Cat Dinding (Wall Paint / Stucco), exposed terracotta brick, raw concrete, and warm timber wood"
+    "exposed terracotta brick, raw concrete, and warm timber wood"
 ]
-
-  
 
 DB_SUASANA = [
     "Sunny Day", "Golden Hour (Sunset)", "Blue Hour (Twilight)", 
@@ -41,7 +34,6 @@ DB_SUASANA = [
     "Overcast Soft Light", "Soft Morning Ambient Light"
 ]
 
-# --- DATABASE BARU UNTUK LOGIKA DINAMIS ---
 DB_CUACA_SIANG = [
     "Clear Blue Sky (Cerah)", 
     "Scattered Clouds (Berawan Sebagian)", 
@@ -122,8 +114,6 @@ DB_RASIO = {
 
 DB_ENGINE = ["Unreal Engine 5", "V-Ray", "Octane", "Corona", "Lumion"]
 
-# --- TAMBAHAN FASE 2: MATERIAL & CINEMATOGRAPHY ---
-
 DB_WEATHERING = [
     "Pristine & Brand New (Sangat Bersih/Baru)",
     "Subtle Weathering (Tanda pemakaian ringan, debu halus di sudut)",
@@ -147,7 +137,6 @@ DB_LENSA_KHUSUS = [
     "85mm Macro f/1.4 (Bokeh, fokus sangat dekat pada tekstur material)",
     "Drone Hasselblad 24mm eq (Khusus Aerial/Bird Eye View)"
 ]
-# --- TAMBAHAN AKHIR FASE 2: TAPAK & VEGETASI ---
 
 DB_TAPAK = [
     "Dense Urban Infill (Perkotaan padat, diapit gedung lain)",
@@ -166,33 +155,7 @@ DB_VEGETASI = [
     "Arid / Desert (Kaktus, Sukulen, Agave, tanpa rumput)",
     "None / Pure Hardscape (Tanpa tanaman, fokus pada material keras)"
 ]
-# --- TAMBAHAN FASE 3: ENTERPRISE PRESETS ---
-DB_PRESETS = {
-    "Pilih Preset Bawaan...": None,
-    "🏢 Cyberpunk Skyscraper (Malam)": {
-        "tipe": "Futuristic Skyscraper", "gaya": "Zaha Hadid Style", "material": "reflective glass facade",
-        "suasana": "Cinematic Night Lighting", "cuaca": "Cinematic Cyberpunk Smog (Asap/Polusi Neon)",
-        "view": "[EXT] Worm's Eye View (Low Angle)", "temp_warna": "RGB / Neon Accents (Cyberpunk, Futuristic)",
-        "fixture_ext": "Architectural Facade Up-lighting", "teknik_cahaya": "Cinematic Volumetric Lighting (God Rays)",
-        "tapak": "Dense Urban Infill (Perkotaan padat, diapit gedung lain)", "vegetasi": "None / Pure Hardscape (Tanpa tanaman, fokus pada material keras)",
-        "rasio": "Portrait / Story (9:16)", "presentasi": "📸 Clean Photorealistic",
-        "skenario": "Standard Clear Architectural Shot", "engine": "Unreal Engine 5",
-        "lensa_khusus": "14mm Ultra-Wide Rectilinear (Interior sempit terlihat megah)", "kamera_film": "Cinematic Anamorphic (Arri Alexa, flare lensa horizontal)",
-        "weathering": "Subtle Weathering (Tanda pemakaian ringan, debu halus di sudut)"
-    },
-    "🌴 Tropical Luxury Villa (Senja)": {
-        "tipe": "Tropical Villa", "gaya": "Biophilic/Green", "material": "sustainable bamboo and stone",
-        "suasana": "Golden Hour (Sunset)", "cuaca": "Clear Blue Sky (Cerah)",
-        "view": "[EXT] Eye Level (Human View)", "temp_warna": "3000K Soft White (Nyaman, Elegan)",
-        "fixture_ext": "Warm Bollard Garden Lights & Pathway LEDs", "teknik_cahaya": "Soft Diffused Bounce Light",
-        "tapak": "Cliffside Ocean View (Tebing berbatu menghadap laut)", "vegetasi": "Lush Tropical (Palem, Monstera, Pakis, rimbun hijau)",
-        "rasio": "Landscape (16:9)", "presentasi": "📸 Clean Photorealistic",
-        "skenario": "Standard Clear Architectural Shot", "engine": "Corona",
-        "lensa_khusus": "50mm Prime Lens (Fokus detail objek, minim distorsi ruang)", "kamera_film": "Medium Format (Hasselblad, depth of field sangat detail & mewah)",
-        "weathering": "Natural Patina & Aging (Oksidasi alami, lumut tipis di area lembap)"
-    }
-}
-# --- FASE 4: CINEMATIC VIDEO & STORYTELLING ---
+
 DB_CAMERA_MOTION = [
     "Static Shot with Micro-Dynamics (Kamera diam, hanya elemen alam yang bergerak)",
     "Slow Dolly-In (Kamera perlahan maju mendekati bangunan secara dramatis)",
@@ -207,10 +170,34 @@ DB_STORYTELLING_VIBE = [
     "Rainy Melancholy (Rintik hujan jatuh ke genangan air, memantulkan cahaya lampu, angin bertiup sedang)",
     "Golden Hour Romance (Cahaya senja menyapu tekstur material, partikel debu melayang di udara, sangat sinematik)"
 ]
+
 DB_ENGINE_VIDEO = [
-    "Google Veo (Terbaik untuk Integrasi Gemini, Cinematic Motion & Native Audio)", 
+    "Google Veo (Terbaik untuk Integrasi Gemini, Cinematic Motion & Native Audio)",
     "Kling 3.0 Omni (Terbaik untuk Multi-shot & Koherensi Spasial)",
     "Luma Dream Machine (Terbaik untuk Navigasi Ruang Interior via NeRF)",
     "OpenAI Sora 2 (Terbaik untuk Transisi Skala Besar)",
     "Runway Gen-4.5 (Terbaik untuk Dynamic Motion Control)"
 ]
+
+DB_AI_CONTROL = [
+    "Canny Edge Detection (Fokus pada garis luar fasad tegak lurus)",
+    "Depth Map (Fokus pada kedalaman ruang dan volume massa)",
+    "MLSD / Lineart (Fokus pada struktur wireframe arsitektural kaku)",
+    "Normal Map (Fokus pada topologi permukaan dan relief fasad)",
+    "Semantic Segmentation / Color Masking (Pemetaan material absolut)"
+]
+
+DB_PRESETS = {
+    "Pilih Preset Bawaan...": None,
+    "🏢 Cyberpunk Skyscraper (Malam)": {
+        "tipe": "Futuristic Skyscraper", "gaya": "Zaha Hadid Style", "material": "reflective glass facade",
+        "suasana": "Cinematic Night Lighting", "cuaca": "Cinematic Cyberpunk Smog (Asap/Polusi Neon)",
+        "view": "[EXT] Worm's Eye View (Low Angle)", "temp_warna": "RGB / Neon Accents (Cyberpunk, Futuristic)",
+        "fixture_ext": "Architectural Facade Up-lighting", "teknik_cahaya": "Cinematic Volumetric Lighting (God Rays)",
+        "tapak": "Dense Urban Infill (Perkotaan padat, diapit gedung lain)", "vegetasi": "None / Pure Hardscape (Tanpa tanaman, fokus pada material keras)",
+        "rasio": "Portrait / Story (9:16)", "presentasi": "📸 Clean Photorealistic",
+        "skenario": "Standard Clear Architectural Shot", "engine": "Unreal Engine 5",
+        "lensa_khusus": "14mm Ultra-Wide Rectilinear (Interior sempit terlihat megah)", "kamera_film": "Cinematic Anamorphic (Arri Alexa, flare lensa horizontal)",
+        "weathering": "Subtle Weathering (Tanda pemakaian ringan, debu halus di sudut)"
+    }
+}
