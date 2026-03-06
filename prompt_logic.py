@@ -45,7 +45,11 @@ def construct_prompt():
     weathering = s.weathering.split(" (")[0]
     core += f"Physically Based Materials (PBR): {pbr_material_desc}. Material Condition/Weathering: {weathering}. "
     
-    # 4. Lighting & Environment
+    # 4. Lighting, Environment & Site Context (Fase 2 Final)
+    # Bersihkan string dari penjelasan bahasa Indonesia
+    tapak = s.tapak.split(" (")[0]
+    vegetasi = s.vegetasi.split(" (")[0]
+    
     lighting_setup = f"Natural Lighting/Time: {s.suasana}. Weather/Atmosphere: {s.cuaca}. "
     if "Auto" not in s.temp_warna:
         lighting_setup += f"Artificial Light Color Temp: {s.temp_warna.split(' (')[0]}. "
@@ -57,6 +61,8 @@ def construct_prompt():
     if "Standard" not in s.teknik_cahaya:
         lighting_setup += f"Advanced Lighting Technique: {s.teknik_cahaya.split(' (')[0]}. "
 
+    # Gabungkan Konteks Tapak ke dalam core prompt
+    core += f"Site Context & Topography: {tapak}. Landscaping & Vegetation: {vegetasi}. "
     core += f"{lighting_setup} Cinematic Storytelling: {s.skenario}. "
     
     if s.detail:
@@ -66,3 +72,4 @@ def construct_prompt():
     core += f"Quality: 4k resolution, hyper-realistic textures, cinematic global illumination, {s.engine} engine aesthetic. --no unrealistic scale, warped geometry, chromatic aberration, text. Aspect Ratio: {db.DB_RASIO[s.rasio]}."
 
     s.generated_prompt = core
+    
