@@ -13,14 +13,22 @@ DB_GAYA = [
     "Scandinavian (Japandi)", "Industrial",
     "Tropical Brutalism with Exposed Brick"
 ]
-
 DB_MATERIAL = [
-    "concrete, glass, and wood accents", "white marble and gold trim", 
-    "exposed brick and steel", "sustainable bamboo and stone", 
-    "reflective glass facade", "weathered corten steel",
+    "Eksterior Cat Dinding (Wall Paint / Stucco)",
+    "Kayu Solid (Timber / Wood Panels)",
+    "Kaca dan Aluminium (Glass & Aluminium Facade)",
+    "concrete, glass, and wood accents",
+    "white marble and gold trim", 
+    "exposed brick and steel",
+    "sustainable bamboo and stone", 
+    "reflective glass facade", 
+    "weathered corten steel",
     "polished travertin stone",
     "exposed terracotta brick, raw concrete, and warm timber wood"
+    "Eksterior Cat Dinding (Wall Paint / Stucco), exposed terracotta brick, raw concrete, and warm timber wood"
 ]
+
+  
 
 DB_SUASANA = [
     "Sunny Day", "Golden Hour (Sunset)", "Blue Hour (Twilight)", 
