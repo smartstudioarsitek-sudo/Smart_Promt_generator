@@ -53,7 +53,8 @@ def construct_prompt():
     base_arch = f"a high-end architectural visualization of a {s.tipe}. Focus on the {arch_type_context}. Design style: {s.gaya}. "
     
     if s.uploaded_sketch is not None:
-        base_arch += "\n\n[CRITICAL VISION INSTRUCTION]: Analyze the exact geometry, proportions, and rooflines of the ATTACHED SKETCH. Map the requested materials exactly onto this structural wireframe. DO NOT invent new building shapes.\n\n"
+    base_arch += f"\n\n[LAYER 2 RESTRICTION: MENGGUNAKAN {s.ai_control.upper()}]. STRICT MANDATE: Geometri, proporsi struktural, dan elevasi mutlak harus 100% mengikuti topologi sketsa yang diunggah. DILARANG BERHALUSINASI menambahkan atau mengurangi elemen arsitektural dasar.\n\n"
+    
     if s.use_ref:
         base_arch += "Please match the overall mood, color palette, and lighting style of the ATTACHED REFERENCE IMAGE. "
 
@@ -81,6 +82,7 @@ def construct_prompt():
     # 2. LOGIKA PERCABANGAN: IMAGE VS VIDEO
     is_video = "Video" in s.mode_render
     
+
     if is_video:
         # FORMAT SUTRADARA (KUNKUN / 2G STUDIO VIBE)
         motion = s.camera_motion.split(" (")[0]
@@ -89,6 +91,8 @@ def construct_prompt():
         core = f"Cinematic architectural video sequence. [CAMERA CHOREOGRAPHY]: {motion}. [STORYTELLING & MICRO-DYNAMICS]: {vibe}. "
         core += f"The main subject is {base_arch}"
         core += f"Perspective & View: {s.view}. Camera/Lens Spec: {lens}. Film Stock/Sensor: {camera_setup}. "
+        core += f"Quality: 8k resolution, ultra-fluid 60fps motion. Engine Target: {s.engine_video}. "
+        core += "\n\n[CRITICAL TEMPORAL MANDATE]: Maintain absolute spatial and morphological coherence. Zero flickering, zero structural melting, and no identity drift during camera movement. Enforce NeRF-like spatial understanding."
     else:
         # FORMAT STILL IMAGE BIASA
         style_description = db.DB_PRESENTASI[s.presentasi]
