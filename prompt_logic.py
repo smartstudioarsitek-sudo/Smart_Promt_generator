@@ -3,19 +3,25 @@ import streamlit as st
 import datetime
 import database_params as db
 
+# prompt_logic.py (Update Fungsi PBR)
 def enhance_with_pbr(material_string):
     pbr_dictionary = {
         "concrete": "exposed raw concrete with micro-surface roughness and subtle moisture staining",
         "wood": "timber wood with deep matte visible grain and low specular reflectivity",
+        "kayu": "natural timber wood panels with detailed matte grain, subtle imperfections, and realistic warm bounce light", # Tambahan
         "marble": "highly polished marble with sharp specular reflections and subsurface scattering",
         "steel": "weathered steel with natural oxidation, high metallic value, and diffuse roughness",
         "glass": "ultra-clear architectural glass with realistic index of refraction and sharp environmental reflections",
-        "brick": "rough terracotta masonry with displacement mapping and ambient occlusion in crevices"
+        "brick": "rough terracotta masonry with displacement mapping and ambient occlusion in crevices",
+        "cat": "smooth matte architectural wall paint (stucco/plaster) with subtle micro-bump textures to catch sunlight realistically", # Tambahan
+        "aluminium": "anodized aluminium frames with brushed metallic finish and realistic anisotropic reflections" # Tambahan
     }
     enhanced = material_string.lower()
     for key, value in pbr_dictionary.items():
-        enhanced = enhanced.replace(key, value)
+        if key in enhanced: # Ubah sedikit logikanya agar me-replace keyword yang ada di dalam string manual
+            enhanced = enhanced.replace(key, value)
     return enhanced
+
 
 # --- FASE 3: SISTEM VALIDASI KONFLIK ---
 def check_conflicts(s):
