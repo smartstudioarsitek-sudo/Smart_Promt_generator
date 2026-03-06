@@ -212,3 +212,4 @@ DB_ENGINE_VIDEO = [
     "Luma Dream Machine (Terbaik untuk Navigasi Ruang Interior via NeRF)",
     "OpenAI Sora 2 (Terbaik untuk Transisi Skala Besar)",
     "Runway Gen-4.5 (Terbaik untuk Dynamic Motion Control)"
+]
