@@ -1,5 +1,10 @@
 # database_params.py
-
+DB_AI_CONTROL = [
+    "Canny Edge Detection (Fokus pada garis luar fasad tegak lurus)",
+    "Depth Map (Fokus pada kedalaman ruang dan volume massa)",
+    "MLSD / Lineart (Fokus pada struktur wireframe arsitektural kaku)",
+    "Normal Map (Fokus pada topologi permukaan dan relief fasad)"
+]   
 DB_TIPE = [
     "Modern Minimalist House", "Grand Mosque (Masjid)", "Tropical Villa", 
     "Industrial Office", "Futuristic Skyscraper", "Bamboo Eco-Lodge",
