@@ -170,35 +170,36 @@ def handle_render_image():
         st.session_state.app_error = "Silakan susun prompt terlebih dahulu."
         return
 
-    # 1. Mapping Resolusi Aktual (Pollinations menggunakan pixel, bukan rasio string)
+    # 1. Optimasi Resolusi (Diperkecil sedikit ke HD agar server tidak timeout & memicu error 530)
     rasio_mapping = {
-        "Landscape (16:9)": (1920, 1080),
-        "Portrait / Story (9:16)": (1080, 1920),
+        "Landscape (16:9)": (1280, 720),
+        "Portrait / Story (9:16)": (720, 1280),
         "Square / Feed (1:1)": (1024, 1024),
-        "Classic Photo (4:3)": (1440, 1080),
-        "Ultra Wide (4:1)": (1920, 512)
+        "Classic Photo (4:3)": (1024, 768),
+        "Ultra Wide (4:1)": (1280, 320)
     }
-    width, height = rasio_mapping.get(st.session_state.rasio, (1920, 1080))
+    width, height = rasio_mapping.get(st.session_state.rasio, (1280, 720))
 
-    # 2. Persiapkan URL dan Parameter
-    # Encode prompt agar aman dikirim lewat URL
+    # 2. Encode prompt & buat seed
     safe_prompt = urllib.parse.quote(st.session_state.generated_prompt)
-    
-    # Gunakan seed acak agar hasil render berbeda meskipun prompt-nya persis sama
     seed = random.randint(1, 1000000)
     
-    # Endpoint Pollinations (model=flux untuk hasil paling fotorealistis, nologo=true hilangkan watermark)
+    # URL Endpoint (menggunakan model flux untuk hasil paling detail)
     endpoint = f"https://image.pollinations.ai/prompt/{safe_prompt}?width={width}&height={height}&seed={seed}&nologo=true&model=flux"
 
     try:
-        # 3. Eksekusi Request Langsung
-        # Pollinations langsung mengembalikan file gambar mentah (bytes), bukan JSON
-        response = requests.get(endpoint)
+        # 3. KUNCI PERBAIKAN: Menambahkan User-Agent agar tidak diblokir Cloudflare
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+        }
+        
+        # Tambahkan timeout 30 detik untuk berjaga-jaga
+        response = requests.get(endpoint, headers=headers, timeout=30)
         
         if not response.ok:
-            raise Exception(f"Gagal merender gambar dari server eksternal (Status {response.status_code})")
+            raise Exception(f"Server eksternal penuh atau menolak permintaan (Status {response.status_code})")
             
-        # 4. Konversi gambar menjadi Base64 agar kompatibel dengan state UI Streamlit
+        # 4. Konversi gambar ke Base64
         image_bytes = response.content
         b64_image = base64.b64encode(image_bytes).decode('utf-8')
         
@@ -207,6 +208,14 @@ def handle_render_image():
             
     except Exception as e:
         st.session_state.app_error = f"Render API Error: {str(e)}"
+
+# Fungsi ini ditambahkan agar tombol GENERATE VIDEO tidak membuat aplikasi crash
+def handle_trigger_video():
+    if not st.session_state.render_image_base64:
+        st.session_state.app_error = "Render gambar terlebih dahulu."
+        return
+    st.session_state.app_error = "Fitur Video sedang dalam tahap penyambungan API..."
+    # Nanti kita bisa pasang integrasi model Veo 3.0 di sini
 
 # ==========================================
 # 5. UI RENDER (Streamlit Layout)
