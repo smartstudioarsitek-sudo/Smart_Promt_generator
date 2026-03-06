@@ -386,16 +386,70 @@ with col_right:
                 micro_prompt = st.text_input("Contoh: 'Change the wall paint to dark green' atau 'Add a modern leather sofa'", max_chars=200)
                 
                 if st.button("✨ Eksekusi Revisi", type="primary", use_container_width=True):
-                    # Validasi: Pastikan pengguna sudah mencoret sesuatu di kanvas
+                    # Validasi 1: Pastikan pengguna sudah mencoret sesuatu di kanvas
                     if canvas_result.image_data is not None and np.any(canvas_result.image_data[:, :, 3] > 0):
+                        # Validasi 2: Pastikan ada instruksi mikro
                         if micro_prompt:
-                            st.success("✅ Masker dan Instruksi berhasil ditangkap!")
-                            # Di sini nanti kita akan ekstrak maskernya dan kirim ke API Edit Image
-                            st.info(f"Mengirim instruksi: **{micro_prompt}** ke area yang di-masking... (Fungsi API Inpainting akan diintegrasikan di sini)")
+                            with st.spinner("Mengirim masker dan instruksi ke Google AI (Inpainting)..."):
+                                try:
+                                    # 1. EKSTRAKSI MASKER (Hitam-Putih) dari coretan kanvas
+                                    # Buat kanvas kosong warna hitam
+                                    mask_array = np.zeros((base_image_resized.height, base_image_resized.width), dtype=np.uint8)
+                                    # Area yang dicoret pengguna (Alpha > 0) diubah jadi warna putih (255)
+                                    mask_array[canvas_result.image_data[:, :, 3] > 0] = 255
+                                    # Konversi matriks angka menjadi file gambar Masker
+                                    mask_image = Image.fromarray(mask_array, mode="L")
+                                    
+                                    # Pastikan gambar base formatnya RGB murni sebelum dikirim ke server
+                                    base_rgb = base_image_resized.convert("RGB")
+                                    
+                                    # 2. PANGGIL API EDIT GAMBAR (MODUL 2)
+                                    # Menggunakan model Imagen 4.0 yang stabil di akun Anda
+                                    result = client.models.edit_images(
+                                        model='imagen-4.0-generate-001',
+                                        prompt=micro_prompt,
+                                        base_image=base_rgb,
+                                        mask_image=mask_image,
+                                        config=types.EditImagesConfig(
+                                            number_of_images=1,
+                                            output_mime_type="image/jpeg",
+                                            edit_mode="INPAINTING_INSERT" # Kunci agar tidak mengubah area di luar masker
+                                        )
+                                    )
+                                    
+                                    # 3. TAMPILKAN HASILNYA
+                                    st.success("✅ Revisi Selesai! (Aturan 'The One Edit Rule' berhasil diterapkan)")
+                                    
+                                    for generated_image in result.generated_images:
+                                        edited_img = Image.open(io.BytesIO(generated_image.image.image_bytes))
+                                        
+                                        # Tampilkan gambar berdampingan (Sebelum vs Sesudah)
+                                        col_res1, col_res2 = st.columns(2)
+                                        with col_res1:
+                                            st.image(base_rgb, caption="Gambar Asli (Sebelum)", use_container_width=True)
+                                        with col_res2:
+                                            st.image(edited_img, caption=f"Hasil Revisi: {micro_prompt}", use_container_width=True)
+                                            
+                                        # Tombol Unduh Revisi
+                                        buf = io.BytesIO()
+                                        edited_img.save(buf, format="JPEG")
+                                        byte_im = buf.getvalue()
+                                        st.download_button(
+                                            label="💾 Unduh Hasil Revisi",
+                                            data=byte_im,
+                                            file_name="Revisi_Inpainting.jpg",
+                                            mime="image/jpeg",
+                                            use_container_width=True
+                                        )
+                                        
+                                except Exception as e:
+                                    st.error(f"Gagal memproses revisi inpainting: {e}")
+                                    st.info("Pastikan koneksi internet stabil dan kuota API Anda masih tersedia.")
                         else:
-                            st.warning("Mohon ketik Instruksi Mikro terlebih dahulu.")
+                            st.warning("Mohon ketik Instruksi Mikro terlebih dahulu (Misal: 'Change to wood material').")
                     else:
-                        st.warning("⚠️ Anda belum melukis area masking di atas gambar.")
+                        st.warning("⚠️ Anda belum melukis area masking di atas gambar. Gunakan kuas untuk menandai area yang ingin diubah.")
+                
 
     with tab_hist:
         if not st.session_state.history_ledger:
