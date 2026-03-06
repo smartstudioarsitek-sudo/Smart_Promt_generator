@@ -119,6 +119,7 @@ with col_left:
     # Membuat 4 Tab Utama
     tab1, tab2, tab3, tab4 = st.tabs(["🏛️ Geometri & Material", "💡 Tata Cahaya", "🌍 Konteks Lingkungan", "📷 Sinema & Lensa"])
     
+    
     with tab1:
         # --- FITUR BARU: UPLOAD SKETSA ---
         st.markdown('<div class="section-title">📐 Geometry & Sketch Upload</div>', unsafe_allow_html=True)
@@ -131,6 +132,7 @@ with col_left:
         st.markdown("---")
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
         st.session_state.gaya = st.selectbox("Gaya Arsitektur", db.DB_GAYA, index=db.DB_GAYA.index(st.session_state.gaya))
+        
         st.session_state.material = st.selectbox("Material Utama (PBR)", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
         st.session_state.weathering = st.selectbox("Kondisi Fisik / Keausan Material", db.DB_WEATHERING, index=db.DB_WEATHERING.index(st.session_state.weathering))
         st.session_state.detail = st.text_area("Detail Spesifik Khusus (Struktur/Bentuk)", value=st.session_state.detail, height=80)
