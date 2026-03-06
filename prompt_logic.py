@@ -42,21 +42,20 @@ def check_conflicts(s):
         conflicts.append("💡 **Saran Lingkungan:** Anda merender Interior dengan cuaca Hujan/Kabut di luar. Pastikan desain Anda memiliki jendela kaca besar agar efek cuaca ini terlihat dari dalam.")
 
     return conflicts
-
 def construct_prompt():
     s = st.session_state
     
-    style_description = db.DB_PRESENTASI[s.presentasi]
     is_interior = "[INT]" in s.view
     arch_type_context = "interior architectural space" if is_interior else "exterior volumetric structure"
     pbr_material_desc = enhance_with_pbr(s.material)
-
-    core = f"Generate a high-end architectural visualization of a {s.tipe}. Focus on the {arch_type_context}. Design style: {s.gaya}. "
+    
+    # 1. SETUP BASE ARCHITECTURE PROMPT
+    base_arch = f"a high-end architectural visualization of a {s.tipe}. Focus on the {arch_type_context}. Design style: {s.gaya}. "
     
     if s.uploaded_sketch is not None:
-        core += "\n\n[CRITICAL VISION INSTRUCTION]: Analyze the exact geometry, proportions, and rooflines of the ATTACHED SKETCH. Map the requested materials exactly onto this structural wireframe. DO NOT invent new building shapes.\n\n"
+        base_arch += "\n\n[CRITICAL VISION INSTRUCTION]: Analyze the exact geometry, proportions, and rooflines of the ATTACHED SKETCH. Map the requested materials exactly onto this structural wireframe. DO NOT invent new building shapes.\n\n"
     if s.use_ref:
-        core += "Please match the overall mood, color palette, and lighting style of the ATTACHED REFERENCE IMAGE. "
+        base_arch += "Please match the overall mood, color palette, and lighting style of the ATTACHED REFERENCE IMAGE. "
 
     if "Auto" not in s.lensa_khusus:
         lens = s.lensa_khusus.split(" (")[0]
@@ -64,11 +63,7 @@ def construct_prompt():
         lens = "Use wide angle 24mm lens" if is_interior else "Use 35mm-50mm lens"
         
     camera_setup = s.kamera_film.split(" (")[0]
-    core += f"Perspective & View: {s.view}. Camera/Lens Spec: {lens}. Film Stock/Sensor: {camera_setup}. Presentation Style: {style_description}. "
-    
     weathering = s.weathering.split(" (")[0]
-    core += f"Physically Based Materials (PBR): {pbr_material_desc}. Material Condition/Weathering: {weathering}. "
-    
     tapak = s.tapak.split(" (")[0]
     vegetasi = s.vegetasi.split(" (")[0]
     
@@ -83,23 +78,48 @@ def construct_prompt():
     if "Standard" not in s.teknik_cahaya:
         lighting_setup += f"Advanced Lighting Technique: {s.teknik_cahaya.split(' (')[0]}. "
 
-    core += f"Site Context: {tapak}. Landscaping: {vegetasi}. {lighting_setup} Cinematic Storytelling: {s.skenario}. "
+    # 2. LOGIKA PERCABANGAN: IMAGE VS VIDEO
+    is_video = "Video" in s.mode_render
     
-    if s.detail:
-        core += f"Additional details: {s.detail}. "
+    if is_video:
+        # FORMAT SUTRADARA (KUNKUN / 2G STUDIO VIBE)
+        motion = s.camera_motion.split(" (")[0]
+        vibe = s.storytelling_vibe.split(" (")[0]
         
-    core += f"Quality: 4k resolution, hyper-realistic textures, cinematic global illumination, {s.engine} engine aesthetic. --no unrealistic scale, warped geometry, chromatic aberration, text. Aspect Ratio: {db.DB_RASIO[s.rasio]}."
+        core = f"Cinematic architectural video sequence. [CAMERA CHOREOGRAPHY]: {motion}. [STORYTELLING & MICRO-DYNAMICS]: {vibe}. "
+        core += f"The main subject is {base_arch}"
+        core += f"Perspective & View: {s.view}. Camera/Lens Spec: {lens}. Film Stock/Sensor: {camera_setup}. "
+    else:
+        # FORMAT STILL IMAGE BIASA
+        style_description = db.DB_PRESENTASI[s.presentasi]
+        core = f"Generate {base_arch}"
+        core += f"Perspective & View: {s.view}. Camera/Lens Spec: {lens}. Film Stock/Sensor: {camera_setup}. Presentation Style: {style_description}. "
+    
+    # 3. GABUNGKAN ELEMEN BERSAMA (MATERIAL, LINGKUNGAN, DLL)
+    core += f"Physically Based Materials (PBR): {pbr_material_desc}. Material Condition/Weathering: {weathering}. "
+    core += f"Site Context: {tapak}. Landscaping: {vegetasi}. {lighting_setup} "
+    
+    if not is_video:
+        core += f"Cinematic Storytelling: {s.skenario}. " # Di image masuk skenario biasa
+        
+    if s.detail:
+        core += f"Additional architectural details: {s.detail}. "
+        
+    if is_video:
+        core += f"Quality: 8k resolution, ultra-fluid 60fps motion, cinematic global illumination, highly realistic physics. Aspect Ratio: {db.DB_RASIO[s.rasio]}."
+    else:
+        core += f"Quality: 4k resolution, hyper-realistic textures, cinematic global illumination, {s.engine} engine aesthetic. --no unrealistic scale, warped geometry, chromatic aberration, text. Aspect Ratio: {db.DB_RASIO[s.rasio]}."
 
     s.generated_prompt = core
     s.conflicts = check_conflicts(s)
 
-    # --- FASE 3: MENYIMPAN KE PROMPT LEDGER (RIWAYAT) ---
+    # --- SIMPAN KE PROMPT LEDGER (RIWAYAT) ---
     timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-    title = f"[{timestamp}] {s.tipe.split(' ')[0]} - {s.suasana.split(' ')[0]}"
+    mode_tag = "[VID]" if is_video else "[IMG]"
+    title = f"{mode_tag} [{timestamp}] {s.tipe.split(' ')[0]} - {s.suasana.split(' ')[0]}"
     
-    # Mencegah duplikasi riwayat yang sama persis secara berurutan
     if not s.history_ledger or s.history_ledger[0]['prompt'] != core:
         s.history_ledger.insert(0, {"title": title, "prompt": core})
-        # Batasi riwayat maksimal 10
         if len(s.history_ledger) > 10:
             s.history_ledger.pop()
+
