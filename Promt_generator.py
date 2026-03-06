@@ -1,28 +1,60 @@
-# Promt_generator.py (atau app.py)
 import streamlit as st
 import random
+import os
+import io
+from PIL import Image
+
 import database_params as db
 import prompt_logic as pl
+
+# Import SDK Google GenAI versi terbaru
 from google import genai
 from google.genai import types
-from PIL import Image
-import io
-import os
 
-# Inisialisasi Klien Google GenAI menggunakan Streamlit Secrets
-try:
-    # Mengambil kunci dari brankas .streamlit/secrets.toml
-    api_key = st.secrets["GEMINI_API_KEY"]
-    client = genai.Client(api_key=api_key)
-except KeyError:
-    st.error("🔑 API Key tidak ditemukan! Pastikan Anda sudah membuat file .streamlit/secrets.toml dan memasukkan GEMINI_API_KEY.")
-except Exception as e:
-    st.warning(f"⚠️ Klien Google GenAI gagal terhubung: {e}")
+# ==========================================
+# 0. KONFIGURASI KEAMANAN & API (ADAPTASI DARI ENGINEX)
+# ==========================================
+def get_api_key():
+    """Mengambil API Key dengan 3 Lapis Keamanan"""
+    try:
+        # Lapis 1: Cek st.secrets (Prioritas utama)
+        return st.secrets.get("GEMINI_API_KEY", st.secrets.get("GOOGLE_API_KEY", ""))
+    except Exception:
+        # Lapis 2: Cek Environment Variable komputer lokal
+        return os.environ.get("GEMINI_API_KEY", os.environ.get("GOOGLE_API_KEY", ""))
 
+# Eksekusi pencarian kunci
+api_key_system = get_api_key()
+client = None
+
+# Bangun Sidebar khusus untuk status AI (seperti di app_enginex)
+with st.sidebar:
+    st.markdown("### 🔐 Status Mesin Render AI")
+    if api_key_system:
+        st.success("🔒 API Key Terdeteksi (Secure Mode)")
+        # Inisialisasi klien dengan kunci dari sistem
+        # Catatan: SDK google-genai terbaru sudah otomatis menggunakan HTTP/REST yang sangat stabil
+        client = genai.Client(api_key=api_key_system)
+    else:
+        st.warning("⚠️ Mode Publik (Tidak Aman)")
+        st.caption("Sistem tidak menemukan file .streamlit/secrets.toml")
+        api_key_input = st.text_input("🔑 Masukkan API Key Manual:", type="password", help="Dapatkan di Google AI Studio")
+        
+        if api_key_input:
+            client = genai.Client(api_key=api_key_input)
+            st.success("✅ Kunci Manual Terkoneksi!")
+        else:
+            st.error("🚨 Kunci Akses (API Key) Diperlukan!")
+            st.info("Aplikasi dihentikan sementara demi keamanan. Silakan masukkan kunci untuk melanjutkan.")
+            st.stop() # REM DARURAT: Menghentikan seluruh aplikasi agar tidak crash
 
 # ==========================================
 # 1. INITIALIZE SESSION STATE
 # ==========================================
+if 'init' not in st.session_state:
+    st.session_state.init = True
+# ... (dan biarkan sisa kode Anda di bawah ini berlanjut seperti biasa) ...
+
 if 'init' not in st.session_state:
     st.session_state.init = True
     
