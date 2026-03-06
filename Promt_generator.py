@@ -32,6 +32,8 @@ if 'init' not in st.session_state:
     st.session_state.weathering = db.DB_WEATHERING[0]
     st.session_state.kamera_film = db.DB_KAMERA_FILM[0]
     st.session_state.lensa_khusus = db.DB_LENSA_KHUSUS[0]
+    st.session_state.tapak = db.DB_TAPAK[0]
+    st.session_state.vegetasi = db.DB_VEGETASI[0]
 
 def handle_random():
     s = st.session_state
@@ -42,6 +44,8 @@ def handle_random():
     s.view = random.choice(db.DB_VIEW)
     s.skenario = random.choice(db.DB_SKENARIO)
     s.engine = random.choice(db.DB_ENGINE)
+    s.tapak = random.choice(db.DB_TAPAK)
+    s.vegetasi = random.choice(db.DB_VEGETASI)
 
 # ==========================================
 # 2. UI RENDER (Streamlit Layout)
@@ -99,17 +103,25 @@ with col_left:
         st.session_state.teknik_cahaya = st.selectbox("Teknik Render Cahaya Tambahan", db.DB_TEKNIK_CAHAYA, index=db.DB_TEKNIK_CAHAYA.index(st.session_state.teknik_cahaya))
 
     with tab3:
+        st.markdown('<div class="section-title">🌍 Site Context & Landscaping</div>', unsafe_allow_html=True)
+        row_site1, row_site2 = st.columns(2)
+        with row_site1:
+            st.session_state.tapak = st.selectbox("Konteks Tapak / Topografi", db.DB_TAPAK, index=db.DB_TAPAK.index(st.session_state.tapak))
+        with row_site2:
+            st.session_state.vegetasi = st.selectbox("Vegetasi & Lansekap", db.DB_VEGETASI, index=db.DB_VEGETASI.index(st.session_state.vegetasi))
+
+        st.markdown('<div class="section-title">🌤️ Atmosphere & Weather</div>', unsafe_allow_html=True)
         st.session_state.suasana = st.selectbox("Waktu & Pencahayaan Alami", db.DB_SUASANA, index=db.DB_SUASANA.index(st.session_state.suasana))
         
         # LOGIKA DINAMIS TINGKAT LANJUT: Cuaca berdasarkan Waktu
         is_night = any(k in st.session_state.suasana.lower() for k in ["night", "twilight", "sunset"])
-        
         if is_night:
             st.session_state.cuaca = st.selectbox("Kondisi Atmosfer (Malam)", db.DB_CUACA_MALAM)
         else:
             st.session_state.cuaca = st.selectbox("Kondisi Atmosfer (Siang)", db.DB_CUACA_SIANG)
             
         st.session_state.skenario = st.selectbox("Skenario / Lingkungan", db.DB_SKENARIO, index=db.DB_SKENARIO.index(st.session_state.skenario))
+    
 
     with tab4:
         st.session_state.view = st.selectbox("Kamera & Perspektif", db.DB_VIEW, index=db.DB_VIEW.index(st.session_state.view))
