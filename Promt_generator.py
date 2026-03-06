@@ -17,10 +17,7 @@ import prompt_logic as pl
 from google import genai
 from google.genai import types
 
-# ==========================================
-# 0. KONFIGURASI HALAMAN (WAJIB PALING ATAS)
-# ==========================================
-st.set_page_config(page_title="SmartPromt Generator v2.1", layout="wide", initial_sidebar_state="expanded")
+
 
 # ==========================================
 # 1. KONFIGURASI KEAMANAN & API
