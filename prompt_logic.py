@@ -4,9 +4,9 @@ import datetime
 import database_params as db
 
 def enhance_with_pbr(material_string):
+    # ... (fungsi ini biarkan sama seperti sebelumnya) ...
     if not material_string:
         return ""
-        
     pbr_dictionary = {
         "concrete": "exposed raw concrete with mathematical displacement maps, subtle moisture staining, and micro-surface roughness",
         "wood": "timber wood with deep matte visible grain, authentic contact shadows, and signs of subtle aging (organized chaos)",
@@ -27,6 +27,7 @@ def enhance_with_pbr(material_string):
     return enhanced
 
 def check_conflicts(s):
+    # ... (fungsi ini biarkan sama seperti sebelumnya) ...
     conflicts = []
     is_interior = "[INT]" in s.view
     is_night = any(k in s.suasana.lower() for k in ["night", "twilight"])
@@ -55,41 +56,9 @@ def construct_prompt():
     arch_type_context = "interior architectural space" if is_interior else "exterior volumetric structure"
     pbr_material_desc = enhance_with_pbr(s.material)
     
-    # 1. SETUP BASE ARCHITECTURE PROMPT
-    base_arch = f"a high-end architectural visualization of a {s.tipe}. Focus on the {arch_type_context}. Design style: {s.gaya}. "
-    
-    if s.uploaded_sketch is not None:
-        base_arch += f"\n\n[LAYER 2 RESTRICTION: {s.ai_control.upper()}]. STRICT MANDATE: Geometri, proporsi struktural, dan elevasi mutlak harus 100% mengikuti topologi sketsa yang diunggah. DILARANG BERHALUSINASI menambahkan atau mengurangi elemen arsitektural dasar.\n"
-        
-        # LOGIKA SEMANTIC COLOR MASKING (Fitur Baru)
-        if s.use_color_masking:
-            base_arch += "\n[SEMANTIC MATERIAL MASKING MANDATE]: Strictly map the following PBR materials to their corresponding solid color zones in the attached segmentation mask:\n"
-            if s.mask_red: base_arch += f"- RED ZONE: {enhance_with_pbr(s.mask_red)}\n"
-            if s.mask_blue: base_arch += f"- BLUE ZONE: {enhance_with_pbr(s.mask_blue)}\n"
-            if s.mask_green: base_arch += f"- GREEN ZONE: {enhance_with_pbr(s.mask_green)}\n"
-            if s.mask_yellow: base_arch += f"- YELLOW ZONE: {enhance_with_pbr(s.mask_yellow)}\n"
-            if s.mask_purple: base_arch += f"- PURPLE ZONE: {enhance_with_pbr(s.mask_purple)}\n"
-            if s.mask_orange: base_arch += f"- ORANGE ZONE: {enhance_with_pbr(s.mask_orange)}\n"
-            if s.mask_cyan: base_arch += f"- CYAN ZONE: {enhance_with_pbr(s.mask_cyan)}\n"
-            if s.mask_magenta: base_arch += f"- MAGENTA ZONE: {enhance_with_pbr(s.mask_magenta)}\n"
-            base_arch += "CRITICAL: DO NOT mix materials across color boundaries. Maintain sharp material transitions exactly as defined by the color blocks.\n\n"
-        else:
-            base_arch += "\n"
-                    
-    if s.use_ref:
-        base_arch += "Please match the overall mood, color palette, and lighting style of the ATTACHED REFERENCE IMAGE. "
-
-    if "Auto" not in s.lensa_khusus:
-        lens = s.lensa_khusus.split(" (")[0]
-    else:
-        lens = "Use wide angle 24mm lens" if is_interior else "Use 35mm-50mm lens"
-        
-    camera_setup = s.kamera_film.split(" (")[0]
-    weathering = s.weathering.split(" (")[0]
-    tapak = s.tapak.split(" (")[0]
-    vegetasi = s.vegetasi.split(" (")[0]
-    
-    lighting_setup = f"Natural Lighting/Time: {s.suasana}. Weather/Atmosphere: {s.cuaca}. "
+    # --- 1. LINGKUNGAN & ATMOSFER (Prioritas Kunkun Visual) ---
+    # Ditempatkan paling awal agar AI mengunci "mood" dan "suhu cahaya" lebih dulu
+    lighting_setup = f"[ENVIRONMENTAL LIGHTING & ATMOSPHERE]: {s.suasana}. Weather conditions: {s.cuaca}. "
     if "Auto" not in s.temp_warna:
         lighting_setup += f"Artificial Light Color Temp: {s.temp_warna.split(' (')[0]}. "
         
@@ -100,39 +69,79 @@ def construct_prompt():
     if "Standard" not in s.teknik_cahaya:
         lighting_setup += f"Advanced Lighting Technique: {s.teknik_cahaya.split(' (')[0]}. "
 
-    # 2. LOGIKA PERCABANGAN: IMAGE VS VIDEO
+    # --- 2. SUBJEK ARSITEKTUR & GEOMETRI ---
+    base_arch = f"[ARCHITECTURAL SUBJECT]: A high-end architectural visualization of a {s.tipe}. Focus on the {arch_type_context}. Design style: {s.gaya}. "
+    
+    if s.uploaded_sketch is not None:
+        base_arch += f"\n[LAYER 2 RESTRICTION: {s.ai_control.upper()}]. STRICT MANDATE: Geometry, structural proportions, and absolute elevations must 100% follow the topology of the uploaded sketch. DO NOT hallucinate basic architectural elements.\n"
+        
+        # LOGIKA SEMANTIC COLOR MASKING
+        if s.use_color_masking:
+            base_arch += "\n[SEMANTIC MATERIAL MASKING MANDATE]: Strictly map the following PBR materials to their corresponding solid color zones in the attached segmentation mask:\n"
+            if s.mask_red: base_arch += f"- RED ZONE: {enhance_with_pbr(s.mask_red)}\n"
+            if s.mask_blue: base_arch += f"- BLUE ZONE: {enhance_with_pbr(s.mask_blue)}\n"
+            if s.mask_green: base_arch += f"- GREEN ZONE: {enhance_with_pbr(s.mask_green)}\n"
+            if s.mask_yellow: base_arch += f"- YELLOW ZONE: {enhance_with_pbr(s.mask_yellow)}\n"
+            if s.mask_purple: base_arch += f"- PURPLE ZONE: {enhance_with_pbr(s.mask_purple)}\n"
+            if s.mask_orange: base_arch += f"- ORANGE ZONE: {enhance_with_pbr(s.mask_orange)}\n"
+            if s.mask_cyan: base_arch += f"- CYAN ZONE: {enhance_with_pbr(s.mask_cyan)}\n"
+            if s.mask_magenta: base_arch += f"- MAGENTA ZONE: {enhance_with_pbr(s.mask_magenta)}\n"
+            base_arch += "CRITICAL: DO NOT mix materials across color boundaries. Maintain sharp material transitions exactly as defined by the color blocks.\n"
+                    
+    if s.use_ref:
+        base_arch += "Please match the overall mood, color palette, and lighting style of the ATTACHED REFERENCE IMAGE. "
+
+    # --- 3. KOMPOSISI FOTOGRAFI & KAMERA (Prioritas 2G Studio) ---
+    if "Auto" not in s.lensa_khusus:
+        lens = s.lensa_khusus.split(" (")[0]
+    else:
+        lens = "Use wide angle 24mm lens" if is_interior else "Use 35mm-50mm lens"
+        
+    camera_setup = s.kamera_film.split(" (")[0]
+    
+    # Makro tersembunyi untuk mendisiplinkan AI (Rule of Thirds, dll)
+    composition_macros = (
+        "[CINEMATIC COMPOSITION DIRECTIVES]: Strictly apply Rule of Thirds composition. "
+        "Integrate natural leading lines converging towards the main architectural subject. "
+        "Establish spatial scale using realistic depth of field with subtle blurred foreground elements (e.g., foliage or silhouettes)."
+    )
+
+    # --- 4. MATERIAL & KONTEKS SITE ---
+    context_setup = f"Physically Based Base Materials: {pbr_material_desc}. Material Condition/Weathering: {s.weathering.split(' (')[0]}. "
+    context_setup += f"Site Context: {s.tapak.split(' (')[0]}. Landscaping: {s.vegetasi.split(' (')[0]}. "
+
+    # --- 5. PERAKITAN PROMPT FINAL (Berdasarkan Hierarki) ---
     is_video = "Video" in s.mode_render
     
     if is_video:
         motion = s.camera_motion.split(" (")[0]
         vibe = s.storytelling_vibe.split(" (")[0]
         
-        core = f"Cinematic architectural video sequence. [CAMERA CHOREOGRAPHY]: {motion}. [STORYTELLING & MICRO-DYNAMICS]: {vibe}. "
-        core += f"The main subject is {base_arch}"
-        core += f"Perspective & View: {s.view}. Camera/Lens Spec: {lens}. Film Stock/Sensor: {camera_setup}. "
+        core = f"{lighting_setup}\n\n"
+        core += f"Cinematic architectural video sequence. [CAMERA CHOREOGRAPHY]: {motion}. [STORYTELLING & MICRO-DYNAMICS]: {vibe}. "
+        core += f"{base_arch}\n{context_setup}\n"
+        core += f"Perspective & View: {s.view}. Camera/Lens Spec: {lens}. Film Stock/Sensor: {camera_setup}. {composition_macros}\n"
         core += f"Quality: 8k resolution, ultra-fluid 60fps motion. Engine Target: {s.engine_video}. "
-        core += "\n\n[CRITICAL TEMPORAL MANDATE]: Maintain absolute spatial and morphological coherence. Zero flickering, zero structural melting, and no identity drift during camera movement. Enforce NeRF-like spatial understanding."
+        core += "\n[CRITICAL TEMPORAL MANDATE]: Maintain absolute spatial and morphological coherence. Zero flickering, zero structural melting, and no identity drift during camera movement. Enforce NeRF-like spatial understanding."
     else:
         style_description = db.DB_PRESENTASI[s.presentasi]
-        core = f"Generate {base_arch}"
-        core += f"Perspective & View: {s.view}. Camera/Lens Spec: {lens}. Film Stock/Sensor: {camera_setup}. Presentation Style: {style_description}. "
-    
-    # 3. GABUNGKAN ELEMEN BERSAMA
-    # Jika pakai masking, material dasar tetap ditulis untuk mengisi area netral
-    core += f"Physically Based Base Materials: {pbr_material_desc}. Material Condition/Weathering: {weathering}. "
-    core += f"Site Context: {tapak}. Landscaping: {vegetasi}. {lighting_setup} "
-    
-    if not is_video:
-        core += f"Cinematic Storytelling: {s.skenario}. "
-        core += "\n\n[POST-PRODUCTION REQUIREMENT]: If supported by the generation engine, simulate or prepare output for Multi-pass EXR extraction including Z-Depth maps, Ambient Occlusion, Specular Highlights, and Cryptomatte ID masks for deep material logic editing. "
+        
+        # Eksekusi Perakitan Terstruktur
+        core = f"{lighting_setup}\n\n"
+        core += f"{base_arch}\n"
+        core += f"{context_setup}\n"
+        core += f"Camera & Optics: Perspective {s.view}. {lens}. {camera_setup}. {composition_macros}\n"
+        core += f"Presentation Style: {style_description}. Cinematic Storytelling: {s.skenario}. "
+        
+        core += "\n[POST-PRODUCTION REQUIREMENT]: If supported by the generation engine, simulate or prepare output for Multi-pass EXR extraction including Z-Depth maps, Ambient Occlusion, Specular Highlights, and Cryptomatte ID masks for deep material logic editing. "
         
     if s.detail:
-        core += f"Additional architectural details: {s.detail}. "
+        core += f"\nAdditional architectural details: {s.detail}. "
         
     if is_video:
-        core += f"Quality: 8k resolution, ultra-fluid 60fps motion, cinematic global illumination, highly realistic physics. Aspect Ratio: {db.DB_RASIO[s.rasio]}."
+        core += f"\nQuality: 8k resolution, ultra-fluid 60fps motion, cinematic global illumination, highly realistic physics. Aspect Ratio: {db.DB_RASIO[s.rasio]}."
     else:
-        core += f"Quality: 4k resolution, hyper-realistic textures, cinematic global illumination, {s.engine} engine aesthetic. --no unrealistic scale, warped geometry, chromatic aberration, text. Aspect Ratio: {db.DB_RASIO[s.rasio]}."
+        core += f"\nQuality: 4k resolution, hyper-realistic textures, cinematic global illumination, {s.engine} engine aesthetic. --no unrealistic scale, warped geometry, chromatic aberration, text. Aspect Ratio: {db.DB_RASIO[s.rasio]}."
 
     s.generated_prompt = core
     s.conflicts = check_conflicts(s)
