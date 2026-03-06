@@ -39,6 +39,10 @@ if 'init' not in st.session_state:
     st.session_state.conflicts = []          # Untuk menyimpan peringatan tabrakan parameter
     st.session_state.history_ledger = []     # Buku riwayat 10 prompt terakhir
     st.session_state.custom_presets = {}     # Tempat menyimpan preset buatan user
+    # --- TAMBAHAN FASE 4: VIDEO ---
+    st.session_state.mode_render = "📸 Image (Still Photo)"
+    st.session_state.camera_motion = db.DB_CAMERA_MOTION[0]
+    st.session_state.storytelling_vibe = db.DB_STORYTELLING_VIBE[0]
 
 def handle_random():
     s = st.session_state
@@ -115,7 +119,16 @@ with col_left:
                 }
                 st.success(f"Preset '{new_preset_name}' disimpan!")
                 st.rerun()
-
+    
+    # --- PILIHAN MODE RENDER ---
+    st.markdown("---")
+    st.session_state.mode_render = st.radio(
+        "Pilih Format Output (Sutradara Mode):",
+        ["📸 Image (Still Photo)", "🎥 Video (Cinematic Animation)"],
+        horizontal=True
+    )
+    st.markdown("---")
+    
     # Membuat 4 Tab Utama
     tab1, tab2, tab3, tab4 = st.tabs(["🏛️ Geometri & Material", "💡 Tata Cahaya", "🌍 Konteks Lingkungan", "📷 Sinema & Lensa"])
     
