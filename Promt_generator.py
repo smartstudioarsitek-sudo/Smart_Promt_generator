@@ -270,7 +270,7 @@ with col_right:
 
                         # Panggilan API ke Imagen 3
                         result = client.models.generate_images(
-                            model='imagen-3.0-generate-002',
+                            model='imagen-3.0-generate-001',
                             prompt=st.session_state.generated_prompt,
                             config=types.GenerateImagesConfig(
                                 number_of_images=1,
