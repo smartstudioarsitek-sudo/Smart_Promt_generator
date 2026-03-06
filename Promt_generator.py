@@ -3,6 +3,18 @@ import streamlit as st
 import random
 import database_params as db
 import prompt_logic as pl
+from google import genai
+from google.genai import types
+from PIL import Image
+import io
+import os
+
+# Inisialisasi Klien (Pastikan environment variable GOOGLE_API_KEY sudah diatur di sistem/Streamlit Secrets Anda)
+try:
+    client = genai.Client()
+except Exception as e:
+    st.warning("⚠️ Klien Google GenAI belum terhubung. Pastikan API Key valid.")
+# -------------------------------------------------
 
 # ==========================================
 # 1. INITIALIZE SESSION STATE
@@ -228,21 +240,72 @@ with col_left:
         pl.construct_prompt()
 
 with col_right:
-    tab_out, tab_hist = st.tabs(["🖥️ Output Prompt", "📚 Prompt Ledger (Riwayat)"])
+    tab_out, tab_hist = st.tabs(["🖥️ Output Visual", "📚 Prompt Ledger (Riwayat)"])
     
     with tab_out:
         if st.session_state.generated_prompt:
-            st.success("✅ Prompt Profesional siap! Copy teks di bawah ini dan paste ke Gemini Advanced.")
-            st.code(st.session_state.generated_prompt, language="plaintext")
-            if st.session_state.uploaded_sketch or st.session_state.use_ref:
-                st.info("⚠️ **PENTING:** Upload file gambar sketsa (dan mask warna jika aktif) ke chat Gemini bersama prompt ini!")
+            st.success("✅ Logika arsitektural siap! Anda dapat melihat prompt mentahnya di bawah, atau langsung merender.")
+            
+            # Kita sembunyikan prompt mentahnya di dalam expander agar UI terlihat bersih (Gaya Profesional)
+            with st.expander("🛠️ Lihat Parameter Prompt Mentor (Debugging)", expanded=False):
+                st.code(st.session_state.generated_prompt, language="plaintext")
+            
+            # --- TOMBOL EKSEKUSI RENDER LANGSUNG ---
+            if st.button("🚀 RENDER GAMBAR (IMAGEN 3)", use_container_width=True, type="primary"):
+                with st.spinner("Memproses Raytracing & Global Illumination via Imagen 3..."):
+                    try:
+                        # Pemetaan rasio (Streamlit UI ke format API)
+                        aspect_ratio_map = {
+                            "16:9": "16:9",
+                            "9:16": "9:16",
+                            "1:1": "1:1",
+                            "4:3": "4:3",
+                            "4:1": "16:9" # Imagen 3 mungkin perlu fallback untuk rasio ultra-wide
+                        }
+                        target_ratio = aspect_ratio_map.get(db.DB_RASIO[st.session_state.rasio], "1:1")
+
+                        # Panggilan API ke Imagen 3
+                        result = client.models.generate_images(
+                            model='imagen-3.0-generate-002',
+                            prompt=st.session_state.generated_prompt,
+                            config=types.GenerateImagesConfig(
+                                number_of_images=1,
+                                output_mime_type="image/jpeg",
+                                aspect_ratio=target_ratio
+                            )
+                        )
+                        
+                        # Ekstraksi dan penayangan gambar
+                        for generated_image in result.generated_images:
+                            image = Image.open(io.BytesIO(generated_image.image.image_bytes))
+                            st.image(image, caption=f"Render Final: {st.session_state.tipe}", use_container_width=True)
+                            
+                            # Opsional: Tombol Unduh
+                            buf = io.BytesIO()
+                            image.save(buf, format="JPEG")
+                            byte_im = buf.getvalue()
+                            st.download_button(
+                                label="💾 Unduh Render Resolusi Tinggi",
+                                data=byte_im,
+                                file_name=f"Render_{st.session_state.tipe.replace(' ', '_')}.jpg",
+                                mime="image/jpeg",
+                                use_container_width=True
+                            )
+                            
+                    except Exception as e:
+                        st.error(f"Terjadi kesalahan saat rendering: {e}")
+                        st.info("Pastikan kuota API Google Anda mencukupi dan format parameter sudah sesuai.")
+                        
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
             
     with tab_hist:
+        # ... (Bagian riwayat biarkan sama persis seperti kode Anda sebelumnya) ...
         if not st.session_state.history_ledger:
             st.caption("Riwayat prompt Anda akan muncul di sini (Maksimal 10 terakhir).")
         else:
             for i, item in enumerate(st.session_state.history_ledger):
                 with st.expander(f"{item['title']} (Terbaru)" if i==0 else item['title'], expanded=(i==0)):
                     st.code(item['prompt'], language="plaintext")
+
+
