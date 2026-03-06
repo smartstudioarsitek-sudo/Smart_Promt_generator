@@ -141,7 +141,7 @@ with col_left:
         if st.session_state.uploaded_sketch is not None:
             st.image(st.session_state.uploaded_sketch, caption="Preview Sketsa Aktual", use_container_width=True)
             st.success("✅ Sketsa terdeteksi! 'Vision Constraint' akan diaktifkan.")
-            
+            st.session_state.ai_control = st.selectbox("Metode Restriksi Struktural AI (Lapisan 2):", db.DB_AI_CONTROL) 
         st.markdown("---")
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
         st.session_state.gaya = st.selectbox("Gaya Arsitektur", db.DB_GAYA, index=db.DB_GAYA.index(st.session_state.gaya))
