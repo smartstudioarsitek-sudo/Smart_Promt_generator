@@ -24,7 +24,7 @@ DB_MATERIAL = [
     "reflective glass facade", 
     "weathered corten steel",
     "polished travertin stone",
-    "exposed terracotta brick, raw concrete, and warm timber wood"
+    "exposed terracotta brick, raw concrete, and warm timber wood",
     "Eksterior Cat Dinding (Wall Paint / Stucco), exposed terracotta brick, raw concrete, and warm timber wood"
 ]
 
