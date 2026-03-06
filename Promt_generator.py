@@ -189,12 +189,24 @@ with col_left:
     
     with tab1:
         st.markdown('<div class="section-title">📐 Geometry & Sketch Upload</div>', unsafe_allow_html=True)
-        st.session_state.uploaded_sketch = st.file_uploader("Upload Sketsa Garis / Base Image", type=["jpg", "png", "jpeg"])
         
-        if st.session_state.uploaded_sketch is not None:
-            st.image(st.session_state.uploaded_sketch, caption="Preview Sketsa Aktual", use_container_width=True)
+        # 1. Gunakan variabel lokal untuk uploader, dan dukung jfif/webp
+        uploaded_sketch_file = st.file_uploader("Upload Sketsa Garis / Base Image", type=["jpg", "png", "jpeg", "jfif", "webp"])
+        
+        if uploaded_sketch_file is not None:
+            # 2. Buka gambar dengan PIL (Cara paling aman di Streamlit Cloud)
+            sketch_img = Image.open(uploaded_sketch_file)
+            st.image(sketch_img, caption="Preview Sketsa Aktual", use_container_width=True)
+            
+            # 3. Simpan status (Flag) ke memori agar logika prompt mendeteksinya
+            st.session_state.uploaded_sketch = True 
+            
             st.success("✅ Sketsa terdeteksi! 'Vision Constraint' akan diaktifkan.")
             st.session_state.ai_control = st.selectbox("Metode Restriksi Struktural AI (Lapisan 2):", db.DB_AI_CONTROL, index=db.DB_AI_CONTROL.index(st.session_state.ai_control)) 
+        else:
+            # 4. Kosongkan memori jika gambar dihapus/tidak ada
+            st.session_state.uploaded_sketch = None
+     
             
             # --- UI BARU UNTUK FITUR COLOR MASKING ---
             st.markdown("---")
