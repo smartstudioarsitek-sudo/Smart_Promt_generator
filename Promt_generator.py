@@ -44,12 +44,17 @@ if 'init' not in st.session_state:
     st.session_state.storytelling_vibe = db.DB_STORYTELLING_VIBE[0]
     st.session_state.engine_video = db.DB_ENGINE_VIDEO[0]
     
-    # --- VARIABEL BARU UNTUK COLOR MASKING ---
+    # --- VARIABEL BARU UNTUK COLOR MASKING (DIPERLUAS) ---
     st.session_state.use_color_masking = False
     st.session_state.mask_red = "Beton Ekspos (Concrete)"
     st.session_state.mask_blue = "Batu Andesit (Andesite Stone)"
     st.session_state.mask_green = "Cat Putih (White Stucco)"
     st.session_state.mask_yellow = "Kayu Solid (Timber Wood)"
+    st.session_state.mask_purple = "Kaca Jernih (Clear Glass)"
+    st.session_state.mask_orange = "Bata Terracotta (Terracotta Brick)"
+    st.session_state.mask_cyan = "Besi / Aluminium (Steel/Aluminium)"
+    st.session_state.mask_magenta = "Marmer / Granit (Marble/Granite)"
+    
 
 def handle_random():
     s = st.session_state
@@ -144,15 +149,19 @@ with col_left:
             st.markdown("---")
             st.session_state.use_color_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", value=st.session_state.use_color_masking)
             if st.session_state.use_color_masking:
-                st.info("💡 Pastikan Anda juga mengunggah gambar 'Color Mask' di chat Gemini yang mewarnai area bangunan sesuai kode di bawah ini.")
+                st.info("💡 Pastikan Anda mengunggah gambar 'Color Mask' bersolusi tinggi dengan warna kontras (merah, biru, hijau murni, dsb) di chat Gemini.")
                 c1, c2 = st.columns(2)
                 with c1:
-                    st.session_state.mask_red = st.text_input("🔴 Area Merah (Red Zone):", value=st.session_state.mask_red)
-                    st.session_state.mask_green = st.text_input("🟢 Area Hijau (Green Zone):", value=st.session_state.mask_green)
+                    st.session_state.mask_red = st.text_input("🔴 Merah (Red Zone):", value=st.session_state.mask_red)
+                    st.session_state.mask_green = st.text_input("🟢 Hijau (Green Zone):", value=st.session_state.mask_green)
+                    st.session_state.mask_purple = st.text_input("🟣 Ungu (Purple Zone):", value=st.session_state.mask_purple)
+                    st.session_state.mask_cyan = st.text_input("🩵 Cyan (Cyan Zone):", value=st.session_state.mask_cyan)
                 with c2:
-                    st.session_state.mask_blue = st.text_input("🔵 Area Biru (Blue Zone):", value=st.session_state.mask_blue)
-                    st.session_state.mask_yellow = st.text_input("🟡 Area Kuning (Yellow Zone):", value=st.session_state.mask_yellow)
-            
+                    st.session_state.mask_blue = st.text_input("🔵 Biru (Blue Zone):", value=st.session_state.mask_blue)
+                    st.session_state.mask_yellow = st.text_input("🟡 Kuning (Yellow Zone):", value=st.session_state.mask_yellow)
+                    st.session_state.mask_orange = st.text_input("🟠 Oranye (Orange Zone):", value=st.session_state.mask_orange)
+                    st.session_state.mask_magenta = st.text_input("🩷 Magenta (Magenta Zone):", value=st.session_state.mask_magenta)
+                        
         st.markdown("---")
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
         st.session_state.gaya = st.selectbox("Gaya Arsitektur", db.DB_GAYA, index=db.DB_GAYA.index(st.session_state.gaya))
