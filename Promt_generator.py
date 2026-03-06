@@ -1,4 +1,4 @@
-# app.py
+# Promt_generator.py (atau app.py)
 import streamlit as st
 import random
 import database_params as db
@@ -10,7 +10,6 @@ import prompt_logic as pl
 if 'init' not in st.session_state:
     st.session_state.init = True
     
-    # Set default values from database
     st.session_state.tipe = db.DB_TIPE[0]
     st.session_state.gaya = db.DB_GAYA[0]
     st.session_state.material = db.DB_MATERIAL[0]
@@ -32,18 +31,25 @@ if 'init' not in st.session_state:
     st.session_state.tapak = db.DB_TAPAK[0]
     st.session_state.vegetasi = db.DB_VEGETASI[0]
     
-    # --- UPGRADE FASE 3 & VISION: Variabel Memori Baru ---
     st.session_state.use_ref = False
-    st.session_state.uploaded_sketch = None  # Untuk menyimpan file gambar sketsa
+    st.session_state.uploaded_sketch = None
+    st.session_state.ai_control = db.DB_AI_CONTROL[0]
     st.session_state.generated_prompt = ""
-    st.session_state.conflicts = []          # Untuk menyimpan peringatan tabrakan parameter
-    st.session_state.history_ledger = []     # Buku riwayat 10 prompt terakhir
-    st.session_state.custom_presets = {}     # Tempat menyimpan preset buatan user
-    # --- TAMBAHAN FASE 4: VIDEO ---
+    st.session_state.conflicts = []
+    st.session_state.history_ledger = []
+    st.session_state.custom_presets = {}
+    
     st.session_state.mode_render = "📸 Image (Still Photo)"
     st.session_state.camera_motion = db.DB_CAMERA_MOTION[0]
-    st.session_state.storytelling_vibe = db.DB_STORYTELLING_VIBE[0]   
-    st.session_state.engine_video = db.DB_ENGINE_VIDEO[0] # TAMBAHKAN BARIS INI
+    st.session_state.storytelling_vibe = db.DB_STORYTELLING_VIBE[0]
+    st.session_state.engine_video = db.DB_ENGINE_VIDEO[0]
+    
+    # --- VARIABEL BARU UNTUK COLOR MASKING ---
+    st.session_state.use_color_masking = False
+    st.session_state.mask_red = "Beton Ekspos (Concrete)"
+    st.session_state.mask_blue = "Batu Andesit (Andesite Stone)"
+    st.session_state.mask_green = "Cat Putih (White Stucco)"
+    st.session_state.mask_yellow = "Kayu Solid (Timber Wood)"
 
 def handle_random():
     s = st.session_state
@@ -57,9 +63,7 @@ def handle_random():
     s.tapak = random.choice(db.DB_TAPAK)
     s.vegetasi = random.choice(db.DB_VEGETASI)
 
-# Fungsi baru untuk memuat preset
 def load_preset(preset_name):
-    # Gabungkan preset dari database dan buatan pengguna
     all_presets = {**db.DB_PRESETS, **st.session_state.custom_presets}
     data = all_presets.get(preset_name)
     if data:
@@ -72,7 +76,6 @@ def load_preset(preset_name):
 # ==========================================
 st.set_page_config(page_title="SmartPromt Generator v2.1", layout="wide", initial_sidebar_state="collapsed")
 
-# Custom CSS
 st.markdown("""
 <style>
     .header-box { background-color: #ffffff; padding: 1rem; border-bottom: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;}
@@ -84,7 +87,7 @@ st.markdown("""
 
 col_head1, col_head2 = st.columns([8, 2])
 with col_head1:
-    st.markdown('<div class="header-box"><div style="display:flex; flex-direction:column;"><h1 class="title-text">SmartPromt Generator <span style="color:#4338ca">v2.1</span></h1><p class="subtitle-text">Enterprise Prompt Builder</p></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-box"><div style="display:flex; flex-direction:column;"><h1 class="title-text">SmartPromt Generator <span style="color:#4338ca">v2.1</span></h1><p class="subtitle-text">Enterprise Prompt Builder & Material ID Mapping</p></div></div>', unsafe_allow_html=True)
 with col_head2:
     st.write("") 
     if st.button("🔄 Acak Parameter", use_container_width=True):
@@ -93,10 +96,7 @@ with col_head2:
 
 col_left, col_right = st.columns([6, 6], gap="large")
 
-# --- KIRI: PANEL INPUT (SISTEM TAB & PRESET) ---
 with col_left:
-    
-    # --- FITUR BARU: PRESET MANAGER ---
     with st.expander("📂 Preset Manager (Load & Save)", expanded=False):
         preset_options = list(db.DB_PRESETS.keys()) + list(st.session_state.custom_presets.keys())
         selected_preset = st.selectbox("Pilih Profil Pengaturan:", preset_options)
@@ -121,7 +121,6 @@ with col_left:
                 st.success(f"Preset '{new_preset_name}' disimpan!")
                 st.rerun()
     
-    # --- PILIHAN MODE RENDER ---
     st.markdown("---")
     st.session_state.mode_render = st.radio(
         "Pilih Format Output (Sutradara Mode):",
@@ -130,24 +129,34 @@ with col_left:
     )
     st.markdown("---")
     
-    # Membuat 4 Tab Utama
     tab1, tab2, tab3, tab4 = st.tabs(["🏛️ Geometri & Material", "💡 Tata Cahaya", "🌍 Konteks Lingkungan", "📷 Sinema & Lensa"])
     
-    
     with tab1:
-        # --- FITUR BARU: UPLOAD SKETSA ---
         st.markdown('<div class="section-title">📐 Geometry & Sketch Upload</div>', unsafe_allow_html=True)
-        st.session_state.uploaded_sketch = st.file_uploader("Upload Sketsa / Denah Kasar", type=["jpg", "png", "jpeg"])
+        st.session_state.uploaded_sketch = st.file_uploader("Upload Sketsa Garis / Base Image", type=["jpg", "png", "jpeg"])
         
         if st.session_state.uploaded_sketch is not None:
             st.image(st.session_state.uploaded_sketch, caption="Preview Sketsa Aktual", use_container_width=True)
             st.success("✅ Sketsa terdeteksi! 'Vision Constraint' akan diaktifkan.")
-            st.session_state.ai_control = st.selectbox("Metode Restriksi Struktural AI (Lapisan 2):", db.DB_AI_CONTROL) 
+            st.session_state.ai_control = st.selectbox("Metode Restriksi Struktural AI (Lapisan 2):", db.DB_AI_CONTROL, index=db.DB_AI_CONTROL.index(st.session_state.ai_control)) 
+            
+            # --- UI BARU UNTUK FITUR COLOR MASKING ---
+            st.markdown("---")
+            st.session_state.use_color_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", value=st.session_state.use_color_masking)
+            if st.session_state.use_color_masking:
+                st.info("💡 Pastikan Anda juga mengunggah gambar 'Color Mask' di chat Gemini yang mewarnai area bangunan sesuai kode di bawah ini.")
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.session_state.mask_red = st.text_input("🔴 Area Merah (Red Zone):", value=st.session_state.mask_red)
+                    st.session_state.mask_green = st.text_input("🟢 Area Hijau (Green Zone):", value=st.session_state.mask_green)
+                with c2:
+                    st.session_state.mask_blue = st.text_input("🔵 Area Biru (Blue Zone):", value=st.session_state.mask_blue)
+                    st.session_state.mask_yellow = st.text_input("🟡 Area Kuning (Yellow Zone):", value=st.session_state.mask_yellow)
+            
         st.markdown("---")
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
         st.session_state.gaya = st.selectbox("Gaya Arsitektur", db.DB_GAYA, index=db.DB_GAYA.index(st.session_state.gaya))
-        
-        st.session_state.material = st.selectbox("Material Utama (PBR)", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
+        st.session_state.material = st.selectbox("Material Dasar Lingkungan (Base Material)", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
         st.session_state.weathering = st.selectbox("Kondisi Fisik / Keausan Material", db.DB_WEATHERING, index=db.DB_WEATHERING.index(st.session_state.weathering))
         st.session_state.detail = st.text_area("Detail Spesifik Khusus (Struktur/Bentuk)", value=st.session_state.detail, height=80)
 
@@ -181,11 +190,9 @@ with col_left:
         st.session_state.skenario = st.selectbox("Skenario / Lingkungan", db.DB_SKENARIO, index=db.DB_SKENARIO.index(st.session_state.skenario))
 
     with tab4:
-        # Fitur khusus Video (Hanya muncul jika mode Video dipilih)
         if "Video" in st.session_state.mode_render:
             st.markdown('<div class="section-title">🎥 Cinematic Director (Video Motion)</div>', unsafe_allow_html=True)
-            st.info("💡 Mode Video aktif! Prompt ini sangat cocok untuk Luma Dream Machine, Runway Gen-3, atau Sora.")
-            # TAMBAHKAN PEMILIH ENGINE VIDEO DI SINI
+            st.info("💡 Mode Video aktif! Prompt ini sangat cocok untuk Google Veo, Luma Dream Machine, atau Sora.")
             st.session_state.engine_video = st.selectbox("Engine Video Target (Lapisan Temporal)", db.DB_ENGINE_VIDEO, index=db.DB_ENGINE_VIDEO.index(st.session_state.engine_video))
             st.session_state.camera_motion = st.selectbox("Koreografi Kamera", db.DB_CAMERA_MOTION, index=db.DB_CAMERA_MOTION.index(st.session_state.camera_motion))
             st.session_state.storytelling_vibe = st.selectbox("Nyawa & Suasana", db.DB_STORYTELLING_VIBE, index=db.DB_STORYTELLING_VIBE.index(st.session_state.storytelling_vibe))
@@ -197,16 +204,13 @@ with col_left:
         st.session_state.kamera_film = st.selectbox("Jenis Kamera & Film Stock", db.DB_KAMERA_FILM, index=db.DB_KAMERA_FILM.index(st.session_state.kamera_film))
         st.session_state.rasio = st.selectbox("Rasio Gambar/Video", list(db.DB_RASIO.keys()), index=list(db.DB_RASIO.keys()).index(st.session_state.rasio))
         
-        # Presentasi & Engine disembunyikan jika mode Video, karena Video selalu photorealistic/cinematic
         if "Image" in st.session_state.mode_render:
             st.session_state.presentasi = st.selectbox("Gaya Render", list(db.DB_PRESENTASI.keys()), index=list(db.DB_PRESENTASI.keys()).index(st.session_state.presentasi))
-            st.session_state.engine = st.selectbox("Render Engine", db.DB_ENGINE, index=db.DB_ENGINE.index(st.session_state.engine))
+            st.session_state.engine = st.selectbox("Render Engine Target", db.DB_ENGINE, index=db.DB_ENGINE.index(st.session_state.engine))
     
     st.markdown("---")
-    # Checkbox sketsa sudah dihapus karena diganti File Uploader di atas
     st.session_state.use_ref = st.checkbox("Lampirkan Referensi Style (Moodboard) di chat Gemini", value=st.session_state.use_ref)
 
-    # Menampilkan Peringatan Konflik jika ada
     if st.session_state.conflicts:
         for conflict in st.session_state.conflicts:
             st.warning(conflict)
@@ -214,9 +218,7 @@ with col_left:
     if st.button("✨ SUSUN PROMPT NEURAL", use_container_width=True, type="primary"):
         pl.construct_prompt()
 
-# --- KANAN: PANEL OUTPUT & HISTORY ---
 with col_right:
-    # --- FITUR BARU: TAB OUTPUT DAN RIWAYAT ---
     tab_out, tab_hist = st.tabs(["🖥️ Output Prompt", "📚 Prompt Ledger (Riwayat)"])
     
     with tab_out:
@@ -224,7 +226,7 @@ with col_right:
             st.success("✅ Prompt Profesional siap! Copy teks di bawah ini dan paste ke Gemini Advanced.")
             st.code(st.session_state.generated_prompt, language="plaintext")
             if st.session_state.uploaded_sketch or st.session_state.use_ref:
-                st.info("⚠️ **PENTING:** Upload file gambar sketsa/referensi Anda ke chat Gemini bersama prompt ini!")
+                st.info("⚠️ **PENTING:** Upload file gambar sketsa (dan mask warna jika aktif) ke chat Gemini bersama prompt ini!")
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
             
@@ -233,6 +235,5 @@ with col_right:
             st.caption("Riwayat prompt Anda akan muncul di sini (Maksimal 10 terakhir).")
         else:
             for i, item in enumerate(st.session_state.history_ledger):
-                # Expander pertama otomatis terbuka
                 with st.expander(f"{item['title']} (Terbaru)" if i==0 else item['title'], expanded=(i==0)):
                     st.code(item['prompt'], language="plaintext")
