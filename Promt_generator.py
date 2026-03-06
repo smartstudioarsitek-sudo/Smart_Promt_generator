@@ -97,7 +97,8 @@ if 'init' not in st.session_state:
     st.session_state.skenario = DB_SKENARIO[0]
     st.session_state.engine = DB_ENGINE[0]
     st.session_state.detail = ""
-    st.session_state.lock_sketch = True
+    st.session_state.use_sketch = False
+    st.session_state.use_ref = False
     st.session_state.generated_prompt = ""
 
 # ==========================================
@@ -114,12 +115,21 @@ def handle_random():
 
 def construct_prompt():
     style_description = DB_PRESENTASI[st.session_state.presentasi]
+    
+    # Deteksi Otomatis Interior vs Eksterior dari Pilihan View
     is_interior = "[INT]" in st.session_state.view
     arch_type_context = "interior architectural space" if is_interior else "exterior volumetric structure"
+    
     pbr_material_desc = enhance_with_pbr(st.session_state.material)
 
     core = f"Generate a high-end architectural visualization of a {st.session_state.tipe}. Focus on the {arch_type_context}. Design style: {st.session_state.gaya}. "
     
+    # Instruksi tambahan untuk Gemini jika lampiran diaktifkan
+    if st.session_state.use_sketch:
+        core += "CRITICAL CONSTRAINT: Please strictly follow the structural outlines, geometry, layout, and silhouette provided in the ATTACHED SKETCH IMAGE. "
+    if st.session_state.use_ref:
+        core += "Please match the overall mood, color palette, and lighting style of the ATTACHED REFERENCE IMAGE. "
+
     lens = "Use wide angle 24mm lens to capture the breadth of the space. " if is_interior else "Use 35mm-50mm lens to prevent geometric distortion. "
     core += f"Presentation Style: {style_description}. "
     core += f"Perspective & Lens: {st.session_state.view}. {lens}"
@@ -190,6 +200,15 @@ with col_left:
     st.session_state.engine = st.selectbox("Render Engine", DB_ENGINE, index=DB_ENGINE.index(st.session_state.engine))
     st.session_state.detail = st.text_input("Detail Tambahan (Opsional)", value=st.session_state.detail)
 
+    # TAMBAHAN: Checkbox untuk mempersiapkan prompt lampiran gambar
+    st.markdown("---")
+    st.markdown("**Bahan Tambahan (Centang jika akan upload gambar di Gemini)**")
+    col_cb1, col_cb2 = st.columns(2)
+    with col_cb1:
+        st.session_state.use_sketch = st.checkbox("Lampirkan Sketsa/Blueprint", value=st.session_state.use_sketch)
+    with col_cb2:
+        st.session_state.use_ref = st.checkbox("Lampirkan Referensi Style", value=st.session_state.use_ref)
+
     st.markdown("---")
     if st.button("✨ SUSUN PROMPT NEURAL", use_container_width=True, type="primary"):
         construct_prompt()
@@ -202,6 +221,8 @@ with col_right:
         st.success("✅ Prompt berhasil disusun! Silakan copy teks di bawah ini dan paste ke Gemini Advanced.")
         st.code(st.session_state.generated_prompt, language="plaintext")
         
-        st.info("💡 **Tips Rendering di Gemini:**\nPastikan Anda meminta Gemini untuk membuat gambar menggunakan prompt di atas. Jika Anda ingin menyertakan gambar sketsa sebagai referensi, cukup upload gambar sketsa Anda di chat Gemini bersamaan dengan prompt ini.")
+        # Pesan instruksi dinamis
+        if st.session_state.use_sketch or st.session_state.use_ref:
+            st.warning("⚠️ **PENTING:** Jangan lupa untuk meng-upload file gambar sketsa/referensi Anda ke dalam kolom chat Gemini bersamaan dengan mem-paste prompt ini!")
     else:
         st.info("👈 Silakan atur parameter di sebelah kiri dan klik **SUSUN PROMPT NEURAL**.")
