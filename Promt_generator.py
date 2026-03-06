@@ -9,12 +9,16 @@ from PIL import Image
 import io
 import os
 
-# Inisialisasi Klien (Pastikan environment variable GOOGLE_API_KEY sudah diatur di sistem/Streamlit Secrets Anda)
+# Inisialisasi Klien Google GenAI menggunakan Streamlit Secrets
 try:
-    client = genai.Client()
+    # Mengambil kunci dari brankas .streamlit/secrets.toml
+    api_key = st.secrets["GEMINI_API_KEY"]
+    client = genai.Client(api_key=api_key)
+except KeyError:
+    st.error("🔑 API Key tidak ditemukan! Pastikan Anda sudah membuat file .streamlit/secrets.toml dan memasukkan GEMINI_API_KEY.")
 except Exception as e:
-    st.warning("⚠️ Klien Google GenAI belum terhubung. Pastikan API Key valid.")
-# -------------------------------------------------
+    st.warning(f"⚠️ Klien Google GenAI gagal terhubung: {e}")
+
 
 # ==========================================
 # 1. INITIALIZE SESSION STATE
