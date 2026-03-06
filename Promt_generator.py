@@ -127,7 +127,7 @@ def load_preset(preset_name):
 # ==========================================
 # 2. UI RENDER (Streamlit Layout)
 # ==========================================
-st.set_page_config(page_title="SmartPromt Generator v2.1", layout="wide", initial_sidebar_state="collapsed")
+
 
 st.markdown("""
 <style>
