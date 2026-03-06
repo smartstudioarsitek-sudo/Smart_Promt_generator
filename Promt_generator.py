@@ -4,8 +4,11 @@ import base64
 import requests
 import time
 import requests
+import urllib.parse
+import random
 from google import genai
 from google.genai import types
+
 
 # ==========================================
 # 1. DATABASE & CONFIGURATIONS
@@ -166,76 +169,44 @@ def handle_render_image():
     if not st.session_state.generated_prompt:
         st.session_state.app_error = "Silakan susun prompt terlebih dahulu."
         return
-        
-    if not st.session_state.get("api_key"):
-        st.session_state.app_error = "API Key Gemini belum diisi. Silakan masukkan di Sidebar sebelah kiri."
-        return
 
-    api_key = st.session_state.api_key
-    
-    # 1. AUTO-DETECT MODEL IMAGEN TERBAIK
-    target_model = "imagen-4.0-generate-001" # Fallback bawaan
-    try:
-        url_scan = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
-        res_scan = requests.get(url_scan)
-        if res_scan.ok:
-            models_data = res_scan.json().get("models", [])
-            # Ambil semua model yang namanya mengandung "imagen"
-            imagen_models = [m.get("name").replace("models/", "") for m in models_data if "imagen" in m.get("name", "").lower()]
-            
-            if imagen_models:
-                # Prioritaskan versi ultra atau versi pertama yang ditemukan
-                ultra_models = [m for m in imagen_models if "ultra" in m.lower()]
-                target_model = ultra_models[0] if ultra_models else imagen_models[0]
-    except Exception:
-        pass # Jika scan gagal, tetap jalan menggunakan fallback
-        
-    # 2. EKSEKUSI RENDER GAMBAR
-    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:predict?key={api_key}"
-    
-    # Mapping rasio gambar
+    # 1. Mapping Resolusi Aktual (Pollinations menggunakan pixel, bukan rasio string)
     rasio_mapping = {
-        "Landscape (16:9)": "16:9",
-        "Portrait / Story (9:16)": "9:16",
-        "Square / Feed (1:1)": "1:1",
-        "Classic Photo (4:3)": "4:3",
-        "Ultra Wide (4:1)": "16:9" 
+        "Landscape (16:9)": (1920, 1080),
+        "Portrait / Story (9:16)": (1080, 1920),
+        "Square / Feed (1:1)": (1024, 1024),
+        "Classic Photo (4:3)": (1440, 1080),
+        "Ultra Wide (4:1)": (1920, 512)
     }
-    aspect_ratio = rasio_mapping.get(st.session_state.rasio, "16:9")
+    width, height = rasio_mapping.get(st.session_state.rasio, (1920, 1080))
+
+    # 2. Persiapkan URL dan Parameter
+    # Encode prompt agar aman dikirim lewat URL
+    safe_prompt = urllib.parse.quote(st.session_state.generated_prompt)
     
-    payload = {
-        "instances": [{"prompt": st.session_state.generated_prompt}],
-        "parameters": {
-            "sampleCount": 1,
-            "aspectRatio": aspect_ratio
-        }
-    }
+    # Gunakan seed acak agar hasil render berbeda meskipun prompt-nya persis sama
+    seed = random.randint(1, 1000000)
     
+    # Endpoint Pollinations (model=flux untuk hasil paling fotorealistis, nologo=true hilangkan watermark)
+    endpoint = f"https://image.pollinations.ai/prompt/{safe_prompt}?width={width}&height={height}&seed={seed}&nologo=true&model=flux"
+
     try:
-        response = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'})
+        # 3. Eksekusi Request Langsung
+        # Pollinations langsung mengembalikan file gambar mentah (bytes), bukan JSON
+        response = requests.get(endpoint)
         
         if not response.ok:
-            err_data = response.json()
-            error_msg = err_data.get("error", {}).get("message", f"HTTP {response.status_code}")
-            raise Exception(f"API Error ({target_model}): {error_msg}")
+            raise Exception(f"Gagal merender gambar dari server eksternal (Status {response.status_code})")
             
-        result = response.json()
-        predictions = result.get("predictions")
+        # 4. Konversi gambar menjadi Base64 agar kompatibel dengan state UI Streamlit
+        image_bytes = response.content
+        b64_image = base64.b64encode(image_bytes).decode('utf-8')
         
-        if predictions and len(predictions) > 0:
-            b64_image = predictions[0].get("bytesBase64")
-            if b64_image:
-                st.session_state.render_image_base64 = b64_image
-                st.session_state.app_error = None
-            else:
-                raise Exception(f"Gambar gagal diproses oleh {target_model}.")
-        else:
-            raise Exception("Respons dari API kosong atau format data berubah.")
+        st.session_state.render_image_base64 = b64_image
+        st.session_state.app_error = None
             
     except Exception as e:
-        st.session_state.app_error = str(e)
-
-
+        st.session_state.app_error = f"Render API Error: {str(e)}"
 
 # ==========================================
 # 5. UI RENDER (Streamlit Layout)
