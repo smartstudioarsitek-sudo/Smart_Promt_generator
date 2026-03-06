@@ -271,20 +271,29 @@ with col_left:
 
     if st.button("✨ SUSUN PROMPT NEURAL", use_container_width=True, type="primary"):
         pl.construct_prompt()
-
 with col_right:
-    tab_out, tab_hist = st.tabs(["🖥️ Output Visual", "📚 Prompt Ledger (Riwayat)"])
+    tab_out, tab_hist = st.tabs(["🖥️ Output (Prompt & Visual)", "📚 Prompt Ledger (Riwayat)"])
     
     with tab_out:
         if st.session_state.generated_prompt:
-            st.success("✅ Logika arsitektural siap! Anda dapat melihat prompt mentahnya di bawah, atau langsung merender.")
+            st.success("✅ Logika arsitektural & komposisi fotografi siap dieksekusi!")
             
-            # Kita sembunyikan prompt mentahnya di dalam expander agar UI terlihat bersih (Gaya Profesional)
-            with st.expander("🛠️ Lihat Parameter Prompt Mentor (Debugging)", expanded=False):
-                st.code(st.session_state.generated_prompt, language="plaintext")
-
-            # --- TOMBOL EKSEKUSI RENDER LANGSUNG ---
-            if st.button("🚀 RENDER GAMBAR (IMAGEN 4.0)", use_container_width=True, type="primary"):
+            # --- BAGIAN 1: SUTRADARA PROMPT (GRATIS & COPY-PASTE) ---
+            st.markdown("#### 1️⃣ Eksekusi via Gemini Web / AI Lainnya (Gratis)")
+            st.write("Klik ikon **Copy** di pojok kanan atas kotak ini, lalu *paste* ke chat AI pilihan Anda.")
+            st.code(st.session_state.generated_prompt, language="markdown")
+            
+            # Peringatan Alur Kerja
+            if st.session_state.uploaded_sketch or st.session_state.use_ref:
+                st.warning("⚠️ **PENTING:** Karena Anda mengaktifkan *Vision Constraint* / *Color Masking*, pastikan Anda mengunggah gambar sketsa/masking tersebut secara manual ke chat AI bersamaan dengan prompt di atas!")
+                
+            st.markdown("---")
+            
+            # --- BAGIAN 2: RENDER API INSTAN (PAY-AS-YOU-GO) ---
+            st.markdown("#### 2️⃣ Render Instan via API (Imagen 4.0)")
+            st.write("Gunakan opsi ini untuk render cepat langsung di dalam aplikasi (membutuhkan API Key dengan akses penagihan/Paid Tier aktif).")
+            
+            if st.button("🚀 RENDER GAMBAR SEKARANG", use_container_width=True, type="primary"):
                 with st.spinner("Memproses Raytracing & Global Illumination via Imagen 4.0..."):
                     try:
                         # Pemetaan rasio (Streamlit UI ke format API)
@@ -297,9 +306,9 @@ with col_right:
                         }
                         target_ratio = aspect_ratio_map.get(db.DB_RASIO[st.session_state.rasio], "1:1")
 
-                        # Panggilan API ke Imagen 4.0 (Generasi Terbaru!)
+                        # Panggilan API ke Imagen 4.0
                         result = client.models.generate_images(
-                            model='imagen-4.0-generate-001', # 👈 UBAH MENJADI 4.0 DI SINI
+                            model='imagen-4.0-generate-001',
                             prompt=st.session_state.generated_prompt,
                             config=types.GenerateImagesConfig(
                                 number_of_images=1,
@@ -313,7 +322,7 @@ with col_right:
                             image = Image.open(io.BytesIO(generated_image.image.image_bytes))
                             st.image(image, caption=f"Render Final: {st.session_state.tipe}", use_container_width=True)
                             
-                            # Opsional: Tombol Unduh
+                            # Tombol Unduh
                             buf = io.BytesIO()
                             image.save(buf, format="JPEG")
                             byte_im = buf.getvalue()
@@ -326,19 +335,19 @@ with col_right:
                             )
                             
                     except Exception as e:
-                        st.error(f"Terjadi kesalahan saat rendering: {e}")
+                        st.error(f"Terjadi kesalahan rendering API: {e}")
+                        st.info("💡 Jika Anda melihat pesan 'only available on paid plans', gunakan Opsi 1 (Copy Prompt) di atas.")
             
-                        
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
             
     with tab_hist:
-        # ... (Bagian riwayat biarkan sama persis seperti kode Anda sebelumnya) ...
         if not st.session_state.history_ledger:
             st.caption("Riwayat prompt Anda akan muncul di sini (Maksimal 10 terakhir).")
         else:
             for i, item in enumerate(st.session_state.history_ledger):
                 with st.expander(f"{item['title']} (Terbaru)" if i==0 else item['title'], expanded=(i==0)):
-                    st.code(item['prompt'], language="plaintext")
+                    st.code(item['prompt'], language="markdown")
+
 
 
