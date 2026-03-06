@@ -108,3 +108,29 @@ DB_RASIO = {
 }
 
 DB_ENGINE = ["Unreal Engine 5", "V-Ray", "Octane", "Corona", "Lumion"]
+
+# --- TAMBAHAN FASE 2: MATERIAL & CINEMATOGRAPHY ---
+
+DB_WEATHERING = [
+    "Pristine & Brand New (Sangat Bersih/Baru)",
+    "Subtle Weathering (Tanda pemakaian ringan, debu halus di sudut)",
+    "Natural Patina & Aging (Oksidasi alami, lumut tipis di area lembap)",
+    "Heavy Decay & Abandoned (Rusak, berkarat, cat terkelupas)"
+]
+
+DB_KAMERA_FILM = [
+    "Digital Crisp (Sony A7R IV, tajam, modern, bersih)",
+    "Cinematic Film Stock (Kodak Portra 400, warna hangat, butiran halus)",
+    "Medium Format (Hasselblad, depth of field sangat detail & mewah)",
+    "Cinematic Anamorphic (Arri Alexa, flare lensa horizontal)",
+    "High Contrast Black & White (Leica Monochrom)"
+]
+
+DB_LENSA_KHUSUS = [
+    "Auto (Sesuaikan otomatis dengan View)",
+    "24mm Tilt-Shift Lens (Wajib untuk eksterior: Garis vertikal lurus tegap)",
+    "14mm Ultra-Wide Rectilinear (Interior sempit terlihat megah)",
+    "50mm Prime Lens (Fokus detail objek, minim distorsi ruang)",
+    "85mm Macro f/1.4 (Bokeh, fokus sangat dekat pada tekstur material)",
+    "Drone Hasselblad 24mm eq (Khusus Aerial/Bird Eye View)"
+]
