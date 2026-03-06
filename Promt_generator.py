@@ -264,10 +264,10 @@ with col_right:
                             "9:16": "9:16",
                             "1:1": "1:1",
                             "4:3": "4:3",
-                            "4:1": "16:9" # Imagen 3 mungkin perlu fallback untuk rasio ultra-wide
+                            "4:1": "16:9" # Imagen tidak mendukung 4:1, kita fallback ke 16:9
                         }
                         target_ratio = aspect_ratio_map.get(db.DB_RASIO[st.session_state.rasio], "1:1")
-
+                        
                         # Panggilan API ke Imagen 3
                         result = client.models.generate_images(
                             model='imagen-3.0-generate-001',
