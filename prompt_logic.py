@@ -105,6 +105,7 @@ def construct_prompt():
     
     if not is_video:
         core += f"Cinematic Storytelling: {s.skenario}. " # Di image masuk skenario biasa
+        core += "\n\n[POST-PRODUCTION REQUIREMENT]: If supported by the generation engine, simulate or prepare output for Multi-pass EXR extraction including Z-Depth maps, Ambient Occlusion, Specular Highlights, and Cryptomatte ID masks for deep material logic editing."
         
     if s.detail:
         core += f"Additional architectural details: {s.detail}. "
