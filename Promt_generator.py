@@ -282,10 +282,10 @@ with col_right:
             # Kita sembunyikan prompt mentahnya di dalam expander agar UI terlihat bersih (Gaya Profesional)
             with st.expander("🛠️ Lihat Parameter Prompt Mentor (Debugging)", expanded=False):
                 st.code(st.session_state.generated_prompt, language="plaintext")
-            
+
             # --- TOMBOL EKSEKUSI RENDER LANGSUNG ---
-            if st.button("🚀 RENDER GAMBAR (IMAGEN 3)", use_container_width=True, type="primary"):
-                with st.spinner("Memproses Raytracing & Global Illumination via Imagen 3..."):
+            if st.button("🚀 RENDER GAMBAR (IMAGEN 4.0)", use_container_width=True, type="primary"):
+                with st.spinner("Memproses Raytracing & Global Illumination via Imagen 4.0..."):
                     try:
                         # Pemetaan rasio (Streamlit UI ke format API)
                         aspect_ratio_map = {
@@ -293,13 +293,13 @@ with col_right:
                             "9:16": "9:16",
                             "1:1": "1:1",
                             "4:3": "4:3",
-                            "4:1": "16:9" # Imagen tidak mendukung 4:1, kita fallback ke 16:9
+                            "4:1": "16:9" # Fallback
                         }
                         target_ratio = aspect_ratio_map.get(db.DB_RASIO[st.session_state.rasio], "1:1")
-                        
-                        # Panggilan API ke Imagen 3
+
+                        # Panggilan API ke Imagen 4.0 (Generasi Terbaru!)
                         result = client.models.generate_images(
-                            model='imagen-3.0-generate-001',
+                            model='imagen-4.0-generate-001', # 👈 UBAH MENJADI 4.0 DI SINI
                             prompt=st.session_state.generated_prompt,
                             config=types.GenerateImagesConfig(
                                 number_of_images=1,
@@ -327,7 +327,7 @@ with col_right:
                             
                     except Exception as e:
                         st.error(f"Terjadi kesalahan saat rendering: {e}")
-                        st.info("Pastikan kuota API Google Anda mencukupi dan format parameter sudah sesuai.")
+            
                         
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
