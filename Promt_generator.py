@@ -50,7 +50,7 @@ def handle_random():
 # ==========================================
 # 2. UI RENDER (Streamlit Layout)
 # ==========================================
-st.set_page_config(page_title="SmartBIM Engineex v2.1", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="SmartPROMT_GENERATOR v2.1", layout="wide", initial_sidebar_state="collapsed")
 
 # Custom CSS
 st.markdown("""
@@ -63,7 +63,7 @@ st.markdown("""
 
 col_head1, col_head2 = st.columns([8, 2])
 with col_head1:
-    st.markdown('<div class="header-box"><div style="display:flex; flex-direction:column;"><h1 class="title-text">SmartBIM Engineex <span style="color:#4338ca">v2.1</span></h1><p class="subtitle-text">Enterprise Prompt Builder</p></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-box"><div style="display:flex; flex-direction:column;"><h1 class="title-text">SmartPROMT_GENERATOR <span style="color:#4338ca">v2.1</span></h1><p class="subtitle-text">Enterprise Prompt Builder</p></div></div>', unsafe_allow_html=True)
 with col_head2:
     st.write("") 
     if st.button("🔄 Acak Parameter", use_container_width=True):
