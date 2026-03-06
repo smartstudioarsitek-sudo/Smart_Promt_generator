@@ -1,0 +1,110 @@
+# database_params.py
+
+DB_TIPE = [
+    "Modern Minimalist House", "Grand Mosque (Masjid)", "Tropical Villa", 
+    "Industrial Office", "Futuristic Skyscraper", "Bamboo Eco-Lodge",
+    "Luxury Penthouse", "Cultural Center", "Parametric Pavilion",
+    "Tropical Modern Townhouse"
+]
+
+DB_GAYA = [
+    "Futuristic", "Contemporary", "Islamic Modern", "Biophilic/Green", 
+    "Brutalist", "Zaha Hadid Style", "Parametric Design", 
+    "Scandinavian (Japandi)", "Industrial",
+    "Tropical Brutalism with Exposed Brick"
+]
+
+DB_MATERIAL = [
+    "concrete, glass, and wood accents", "white marble and gold trim", 
+    "exposed brick and steel", "sustainable bamboo and stone", 
+    "reflective glass facade", "weathered corten steel",
+    "polished travertin stone",
+    "exposed terracotta brick, raw concrete, and warm timber wood"
+]
+
+DB_SUASANA = [
+    "Sunny Day", "Golden Hour (Sunset)", "Blue Hour (Twilight)", 
+    "Foggy Morning", "Cinematic Night Lighting", "Rainy Cyberpunk Mood",
+    "Overcast Soft Light", "Soft Morning Ambient Light"
+]
+
+# --- DATABASE BARU UNTUK LOGIKA DINAMIS ---
+DB_CUACA_SIANG = [
+    "Clear Blue Sky (Cerah)", 
+    "Scattered Clouds (Berawan Sebagian)", 
+    "Morning Mist (Kabut Tipis Pagi)", 
+    "Overcast (Mendung Soft Light)", 
+    "Dramatic Storm Clouds (Awan Badai Dramatis)"
+]
+
+DB_CUACA_MALAM = [
+    "Clear Starry Night (Malam Berbintang)", 
+    "Heavy Low Fog (Kabut Tebal Bawah)", 
+    "Rainy with Wet Puddles (Hujan & Genangan Air)", 
+    "Cinematic Cyberpunk Smog (Asap/Polusi Neon)"
+]
+
+DB_VIEW = [
+    "[EXT] Eye Level (Human View)", "[EXT] Drone / Bird's Eye View", "[EXT] Worm's Eye View (Low Angle)",
+    "[INT] Eye Level (Human View)", "[INT] Wide Angle Interior", "[INT] Close-up Detail Shot"
+]
+
+DB_TEMP_WARNA = [
+    "Auto (Berdasarkan Waktu/Suasana)",
+    "2700K Warm White (Hangat, Intim, Mewah)",
+    "3000K Soft White (Nyaman, Elegan)",
+    "4000K Natural White (Bersih, Fokus, Modern)",
+    "6000K Cool Daylight (Terang, Fungsional, Industrial)",
+    "RGB / Neon Accents (Cyberpunk, Futuristic)"
+]
+
+DB_FIXTURE_INT = [
+    "Tanpa Lampu Spesifik (Natural Light)",
+    "Recessed LED Spotlights & Hidden Cove Lighting",
+    "Luxury Crystal Chandelier & Warm Wall Sconces",
+    "Industrial Pendant Lights & Track Lighting",
+    "Minimalist Linear LED Suspended Lights",
+    "Floor Lamps & Table Lamps with Soft Warm Glow"
+]
+
+DB_FIXTURE_EXT = [
+    "Tanpa Lampu Spesifik (Natural Light)",
+    "Architectural Facade Up-lighting",
+    "Warm Bollard Garden Lights & Pathway LEDs",
+    "Hidden LED Strip Under-glowing",
+    "Warm Wall Sconces & Porch Pendants",
+    "Dramatic Floodlights & Pool Underwater Lighting"
+]
+
+DB_TEKNIK_CAHAYA = [
+    "Standard Global Illumination",
+    "Realistic IES Light Profiles",
+    "Cinematic Volumetric Lighting (God Rays)",
+    "Soft Diffused Bounce Light",
+    "High Contrast Chiaroscuro",
+    "Luminous Bloom Effect"
+]
+
+DB_PRESENTASI = {
+    "📸 Clean Photorealistic": "clean, no text, pure photography style",
+    "📏 Technical Concept": "architectural concept sheet style, mixed media, photorealistic render overlaid with hand-drawn technical annotations",
+    "📝 Blueprint / Wireframe": "blueprint style, white lines on blue background, technical drawing, wireframe structural view",
+    "🎨 Watercolor Sketch": "watercolor painting style, soft edges, artistic architectural sketch, ink outline"
+}
+
+DB_SKENARIO = [
+    "Standard Clear Architectural Shot",
+    "Macro Foreground: Sharp focus on falling flower petals (Bokeh)",
+    "Human Scale & Lifestyle: Featuring people on balcony",
+    "Carport Focus: Luxury cars under concrete overhang"
+]
+
+DB_RASIO = {
+    "Landscape (16:9)": "16:9",
+    "Portrait / Story (9:16)": "9:16",
+    "Square / Feed (1:1)": "1:1",
+    "Classic Photo (4:3)": "4:3",
+    "Ultra Wide (4:1)": "4:1" 
+}
+
+DB_ENGINE = ["Unreal Engine 5", "V-Ray", "Octane", "Corona", "Lumion"]
