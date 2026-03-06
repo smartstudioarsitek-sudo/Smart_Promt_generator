@@ -17,7 +17,6 @@ def enhance_with_pbr(material_string):
     return enhanced
 
 def construct_prompt():
-    # Ambil data dari Session State Streamlit
     s = st.session_state
     
     style_description = db.DB_PRESENTASI[s.presentasi]
@@ -32,28 +31,31 @@ def construct_prompt():
     if s.use_ref:
         core += "Please match the overall mood, color palette, and lighting style of the ATTACHED REFERENCE IMAGE. "
 
-    # 2. Cinematography & Lens
-    lens = "Use wide angle 24mm lens to capture the breadth of the space. " if is_interior else "Use 35mm-50mm lens to prevent geometric distortion. "
-    core += f"Perspective & Lens: {s.view}. {lens} Presentation Style: {style_description}. "
+    # 2. Cinematography & Lens (Fase 2 Update)
+    if "Auto" not in s.lensa_khusus:
+        lens = s.lensa_khusus.split(" (")[0] # Ambil teks sebelum tanda kurung
+    else:
+        lens = "Use wide angle 24mm lens" if is_interior else "Use 35mm-50mm lens"
+        
+    camera_setup = s.kamera_film.split(" (")[0]
     
-    # 3. Materials
-    core += f"Physically Based Materials (PBR): {pbr_material_desc}. "
+    core += f"Perspective & View: {s.view}. Camera/Lens Spec: {lens}. Film Stock/Sensor: {camera_setup}. Presentation Style: {style_description}. "
     
-    # 4. Lighting & Environment (Termasuk Cuaca Dinamis)
+    # 3. Materials & Weathering (Fase 2 Update)
+    weathering = s.weathering.split(" (")[0]
+    core += f"Physically Based Materials (PBR): {pbr_material_desc}. Material Condition/Weathering: {weathering}. "
+    
+    # 4. Lighting & Environment
     lighting_setup = f"Natural Lighting/Time: {s.suasana}. Weather/Atmosphere: {s.cuaca}. "
-    
     if "Auto" not in s.temp_warna:
-        clean_temp = s.temp_warna.split(" (")[0]
-        lighting_setup += f"Artificial Light Color Temperature: {clean_temp}. "
+        lighting_setup += f"Artificial Light Color Temp: {s.temp_warna.split(' (')[0]}. "
         
     fixture = s.fixture_int if is_interior else s.fixture_ext
     if "Tanpa" not in fixture:
-        clean_fixture = fixture.split(" (")[0]
-        lighting_setup += f"Specific Lighting Fixtures: {clean_fixture}. "
+        lighting_setup += f"Specific Lighting Fixtures: {fixture.split(' (')[0]}. "
         
     if "Standard" not in s.teknik_cahaya:
-        clean_teknik = s.teknik_cahaya.split(" (")[0]
-        lighting_setup += f"Advanced Lighting Technique: {clean_teknik}. "
+        lighting_setup += f"Advanced Lighting Technique: {s.teknik_cahaya.split(' (')[0]}. "
 
     core += f"{lighting_setup} Cinematic Storytelling: {s.skenario}. "
     
