@@ -7,54 +7,46 @@ from PIL import Image
 import database_params as db
 import prompt_logic as pl
 
-# Import SDK Google GenAI versi terbaru
+# Import SDK Google GenAI
 from google import genai
 from google.genai import types
 
 # ==========================================
-# 0. KONFIGURASI KEAMANAN & API (ADAPTASI DARI ENGINEX)
+# 0. KONFIGURASI HALAMAN (WAJIB PALING ATAS)
+# ==========================================
+st.set_page_config(page_title="SmartPromt Generator v2.1", layout="wide", initial_sidebar_state="expanded")
+
+# ==========================================
+# 1. KONFIGURASI KEAMANAN & API
 # ==========================================
 def get_api_key():
-    """Mengambil API Key dengan 3 Lapis Keamanan"""
+    """Mengambil API Key dengan Aman"""
     try:
-        # Lapis 1: Cek st.secrets (Prioritas utama)
         return st.secrets.get("GEMINI_API_KEY", st.secrets.get("GOOGLE_API_KEY", ""))
     except Exception:
-        # Lapis 2: Cek Environment Variable komputer lokal
         return os.environ.get("GEMINI_API_KEY", os.environ.get("GOOGLE_API_KEY", ""))
 
-# Eksekusi pencarian kunci
 api_key_system = get_api_key()
 client = None
 
-# Bangun Sidebar khusus untuk status AI (seperti di app_enginex)
 with st.sidebar:
-    st.markdown("### 🔐 Status Mesin Render AI")
+    st.markdown("### 🔐 Status Mesin Render")
     if api_key_system:
-        st.success("🔒 API Key Terdeteksi (Secure Mode)")
-        # Inisialisasi klien dengan kunci dari sistem
-        # Catatan: SDK google-genai terbaru sudah otomatis menggunakan HTTP/REST yang sangat stabil
+        st.success("🔒 API Key Terdeteksi")
         client = genai.Client(api_key=api_key_system)
     else:
-        st.warning("⚠️ Mode Publik (Tidak Aman)")
-        st.caption("Sistem tidak menemukan file .streamlit/secrets.toml")
-        api_key_input = st.text_input("🔑 Masukkan API Key Manual:", type="password", help="Dapatkan di Google AI Studio")
-        
+        st.warning("⚠️ Mode Publik")
+        api_key_input = st.text_input("🔑 Masukkan API Key Manual:", type="password")
         if api_key_input:
             client = genai.Client(api_key=api_key_input)
             st.success("✅ Kunci Manual Terkoneksi!")
         else:
-            st.error("🚨 Kunci Akses (API Key) Diperlukan!")
-            st.info("Aplikasi dihentikan sementara demi keamanan. Silakan masukkan kunci untuk melanjutkan.")
-            st.stop() # REM DARURAT: Menghentikan seluruh aplikasi agar tidak crash
+            st.error("🚨 Kunci Akses Diperlukan!")
+            st.stop()
 
 # ==========================================
-# 1. INITIALIZE SESSION STATE
+# 2. INITIALIZE SESSION STATE (Memori Aplikasi)
 # ==========================================
-if 'init' not in st.session_state:
-    st.session_state.init = True
-# ... (dan biarkan sisa kode Anda di bawah ini berlanjut seperti biasa) ...
-
 if 'init' not in st.session_state:
     st.session_state.init = True
     
@@ -85,14 +77,15 @@ if 'init' not in st.session_state:
     st.session_state.generated_prompt = ""
     st.session_state.conflicts = []
     st.session_state.history_ledger = []
-    st.session_state.custom_presets = {}
+    
+    # INI DIA VARIABEL YANG TADI HILANG:
+    st.session_state.custom_presets = {} 
     
     st.session_state.mode_render = "📸 Image (Still Photo)"
     st.session_state.camera_motion = db.DB_CAMERA_MOTION[0]
     st.session_state.storytelling_vibe = db.DB_STORYTELLING_VIBE[0]
     st.session_state.engine_video = db.DB_ENGINE_VIDEO[0]
     
-    # --- VARIABEL BARU UNTUK COLOR MASKING (DIPERLUAS) ---
     st.session_state.use_color_masking = False
     st.session_state.mask_red = "Beton Ekspos (Concrete)"
     st.session_state.mask_blue = "Batu Andesit (Andesite Stone)"
@@ -102,6 +95,10 @@ if 'init' not in st.session_state:
     st.session_state.mask_orange = "Bata Terracotta (Terracotta Brick)"
     st.session_state.mask_cyan = "Besi / Aluminium (Steel/Aluminium)"
     st.session_state.mask_magenta = "Marmer / Granit (Marble/Granite)"
+
+# ==========================================
+# (Sisa kode mulai dari def handle_random() ada di bawah ini)
+# ==========================================
     
 
 def handle_random():
