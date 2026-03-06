@@ -344,8 +344,8 @@ with col_right:
         if not HAS_CANVAS:
             st.error("🚨 Pustaka `streamlit-drawable-canvas` belum terdeteksi. Silakan install via terminal: `pip install streamlit-drawable-canvas`")
         else:
-            base_img_file = st.file_uploader("🖼️ Unggah Gambar Base Render", type=["png", "jpg", "jpeg"], key="inpaint_upload")
-            
+            base_img_file = st.file_uploader("🖼️ Unggah Gambar Base Render", type=["png", "jpg", "jpeg", "jfif", "webp"], key="inpaint_upload")
+                        
             if base_img_file is not None:
                 base_image = Image.open(base_img_file).convert("RGBA")
                 
