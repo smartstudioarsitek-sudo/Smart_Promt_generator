@@ -1,14 +1,5 @@
 import streamlit as st
 import random
-import base64
-import requests
-import time
-import requests
-import urllib.parse
-import random
-from google import genai
-from google.genai import types
-
 
 # ==========================================
 # 1. DATABASE & CONFIGURATIONS
@@ -73,9 +64,6 @@ DB_RASIO = {
 
 DB_ENGINE = ["Unreal Engine 5", "V-Ray", "Octane", "Corona", "Lumion"]
 
-# Konfigurasi URL BFF Server (Ubah sesuai dengan server backend nyata Anda)
-BFF_BASE_URL = "http://localhost:8000" 
-
 # ==========================================
 # 2. UTILITY FUNCTIONS
 # ==========================================
@@ -94,11 +82,8 @@ def enhance_with_pbr(material_string):
         enhanced = enhanced.replace(key, value)
     return enhanced
 
-def get_base64_of_bytes(file_bytes):
-    return base64.b64encode(file_bytes).decode()
-
 # ==========================================
-# 3. INITIALIZE SESSION STATE (Setara useState)
+# 3. INITIALIZE SESSION STATE
 # ==========================================
 if 'init' not in st.session_state:
     st.session_state.init = True
@@ -113,15 +98,7 @@ if 'init' not in st.session_state:
     st.session_state.engine = DB_ENGINE[0]
     st.session_state.detail = ""
     st.session_state.lock_sketch = True
-    st.session_state.use_grounding = True
-    st.session_state.motion_prompt = "Slow cinematic pan, maintaining strict structural rigidity and realistic lighting."
-    
     st.session_state.generated_prompt = ""
-    st.session_state.sketch_image = None
-    st.session_state.style_image = None
-    st.session_state.render_image_base64 = None
-    st.session_state.video_url = None
-    st.session_state.app_error = None
 
 # ==========================================
 # 4. LOGIC FUNCTIONS
@@ -137,19 +114,12 @@ def handle_random():
 
 def construct_prompt():
     style_description = DB_PRESENTASI[st.session_state.presentasi]
-    
     is_interior = "[INT]" in st.session_state.view
     arch_type_context = "interior architectural space" if is_interior else "exterior volumetric structure"
-    
     pbr_material_desc = enhance_with_pbr(st.session_state.material)
 
     core = f"Generate a high-end architectural visualization of a {st.session_state.tipe}. Focus on the {arch_type_context}. Design style: {st.session_state.gaya}. "
     
-    if st.session_state.sketch_image:
-        core += "Follow the structural outlines and geometry provided in the SKETCH IMAGE strictly. "
-        if st.session_state.lock_sketch:
-            core += "CRITICAL CONSTRAINT: Maintain the exact spatial arrangement, scale, and silhouette from the input sketch. "
-
     lens = "Use wide angle 24mm lens to capture the breadth of the space. " if is_interior else "Use 35mm-50mm lens to prevent geometric distortion. "
     core += f"Presentation Style: {style_description}. "
     core += f"Perspective & Lens: {st.session_state.view}. {lens}"
@@ -160,97 +130,16 @@ def construct_prompt():
     if st.session_state.detail:
         core += f"Additional details: {st.session_state.detail}. "
         
-    core += f"Quality: 4k resolution, hyper-realistic textures, cinematic global illumination, {st.session_state.engine} engine aesthetic. --no unrealistic scale, warped geometry, chromatic aberration, text"
+    core += f"Quality: 4k resolution, hyper-realistic textures, cinematic global illumination, {st.session_state.engine} engine aesthetic. --no unrealistic scale, warped geometry, chromatic aberration, text. Aspect Ratio: {DB_RASIO[st.session_state.rasio]}."
 
     st.session_state.generated_prompt = core
-    st.session_state.app_error = None
-
-def handle_render_image():
-    if not st.session_state.generated_prompt:
-        st.session_state.app_error = "Silakan susun prompt terlebih dahulu."
-        return
-
-    # Validasi HF Token
-    hf_token = st.session_state.get("hf_token")
-    if not hf_token:
-        st.session_state.app_error = "Hugging Face Token belum diisi. Masukkan di Sidebar sebelah kiri."
-        return
-
-    # Endpoint model FLUX.1-schnell (Sangat cepat & fotorealistis)
-    API_URL = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
-    headers = {"Authorization": f"Bearer {hf_token}"}
-
-    # Menggunakan metode POST, tidak ada lagi batasan panjang karakter URL!
-    payload = {
-        "inputs": st.session_state.generated_prompt,
-        "parameters": {
-            "num_inference_steps": 4 # Optimasi khusus model Schnell
-        }
-    }
-
-    try:
-        # Timeout 60 detik karena model gambar kadang butuh waktu
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
-        
-        # Penanganan status khusus Hugging Face
-        if response.status_code == 503:
-            raise Exception("Model sedang di-load oleh server (Cold Start). Silakan tunggu 10 detik dan klik Render lagi.")
-        elif not response.ok:
-            raise Exception(f"Server Error (Status {response.status_code}): {response.text}")
-
-        # Konversi output langsung ke Base64
-        image_bytes = response.content
-        st.session_state.render_image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-        st.session_state.app_error = None
-            
-    except Exception as e:
-        st.session_state.app_error = f"Render API Error: {str(e)}"
-
-def handle_trigger_video():
-    if not st.session_state.render_image_base64:
-        st.session_state.app_error = "Render gambar terlebih dahulu."
-        return
-    st.session_state.app_error = "Sistem Video sedang dalam tahap penyambungan API..."
-
 
 # ==========================================
 # 5. UI RENDER (Streamlit Layout)
 # ==========================================
-st.set_page_config(page_title="Smart Arch Studio v2.1", layout="wide", initial_sidebar_state="collapsed")
-# --- SIDEBAR UNTUK API KEY ---
-with st.sidebar:
-    st.header("🔑 Konfigurasi API")
-    st.session_state.api_key = st.text_input("Gemini API Key (Teks/Analisa)", type="password")
-    
-    st.markdown("---")
-    st.session_state.hf_token = st.text_input("Hugging Face Token (Render Gambar)", type="password")
-    st.markdown("[Dapatkan HF Token Gratis di sini](https://huggingface.co/settings/tokens)")
-    
-    st.markdown("---")
-    st.subheader("📡 Diagnostic Scanner")
-    
-    if st.button("Deteksi Model Tersedia", use_container_width=True):
-        if not st.session_state.get("api_key"):
-            st.error("Masukkan Gemini API Key terlebih dahulu di atas.")
-        else:
-            with st.spinner("Mendeteksi..."):
-                api_key = st.session_state.api_key
-                url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
-                try:
-                    response = requests.get(url)
-                    if response.ok:
-                        models = response.json().get("models", [])
-                        st.success(f"Ditemukan {len(models)} model aktif!")
-                        with st.expander("Lihat Daftar Lengkap Model", expanded=True):
-                            for m in models:
-                                name = m.get("name", "").replace("models/", "")
-                                st.markdown(f"📄 {name}")
-                    else:
-                        st.error(f"Gagal mendeteksi. Server membalas: {response.status_code}")
-                except Exception as e:
-                    st.error(f"Koneksi terputus: {str(e)}")
+st.set_page_config(page_title="Smart Arch Prompt v2.1", layout="wide", initial_sidebar_state="collapsed")
 
-# Custom CSS untuk warna dan styling menyerupai Tailwind
+# Custom CSS
 st.markdown("""
 <style>
     .header-box { background-color: #ffffff; padding: 1rem; border-bottom: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;}
@@ -261,51 +150,17 @@ st.markdown("""
 
 col_head1, col_head2 = st.columns([8, 2])
 with col_head1:
-    st.markdown('<div class="header-box"><div style="display:flex; flex-direction:column;"><h1 class="title-text">Smart Arch Studio <span style="color:#4338ca">v2.1 (Enterprise)</span></h1><p class="subtitle-text">Secure Generative BIM Visualizer</p></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-box"><div style="display:flex; flex-direction:column;"><h1 class="title-text">SmartBIM Prompt Generator <span style="color:#4338ca">v2.1</span></h1><p class="subtitle-text">PBR Neural Prompt Builder</p></div></div>', unsafe_allow_html=True)
 with col_head2:
-    st.write("") # spacing
+    st.write("") 
     if st.button("🔄 Acak Parameter", use_container_width=True):
         handle_random()
         st.rerun()
 
-# Layout Utama
 col_left, col_right = st.columns([6, 6], gap="large")
 
 # --- KIRI: PANEL INPUT ---
 with col_left:
-    st.subheader("📤 Source Immersives (Max 7MB)")
-    col_sketch, col_style = st.columns(2)
-    
-    with col_sketch:
-        st.markdown("**Sketsa Dasar (Blueprint)**")
-        st.session_state.lock_sketch = st.checkbox("LOCKED (Maintain Spatial Arrangement)", value=st.session_state.lock_sketch)
-        sketch_file = st.file_uploader("Upload Sketsa", type=["png", "jpg", "jpeg"], key="sketch_up")
-        if sketch_file:
-            if sketch_file.size > 7 * 1024 * 1024:
-                st.error("Ukuran file maksimal 7MB.")
-            else:
-                mime_type = sketch_file.type
-                b64_data = get_base64_of_bytes(sketch_file.read())
-                st.session_state.sketch_image = {"mimeType": mime_type, "data": b64_data}
-                st.image(sketch_file, use_container_width=True)
-        else:
-            st.session_state.sketch_image = None
-            
-    with col_style:
-        st.markdown("**Referensi Mood & Warna**")
-        style_file = st.file_uploader("Upload Referensi", type=["png", "jpg", "jpeg"], key="style_up")
-        if style_file:
-            if style_file.size > 7 * 1024 * 1024:
-                st.error("Ukuran file maksimal 7MB.")
-            else:
-                mime_type = style_file.type
-                b64_data = get_base64_of_bytes(style_file.read())
-                st.session_state.style_image = {"mimeType": mime_type, "data": b64_data}
-                st.image(style_file, use_container_width=True)
-        else:
-            st.session_state.style_image = None
-
-    st.markdown("---")
     st.subheader("⚙️ Project Definition")
     
     row1_col1, row1_col2 = st.columns(2)
@@ -336,44 +191,17 @@ with col_left:
     st.session_state.detail = st.text_input("Detail Tambahan (Opsional)", value=st.session_state.detail)
 
     st.markdown("---")
-    st.markdown("**Konfigurasi Lanjutan (Video & Grounding)**")
-    st.session_state.use_grounding = st.checkbox("Gemini Search Grounding (Gunakan data web live untuk akurasi konteks)", value=st.session_state.use_grounding)
-    st.session_state.motion_prompt = st.text_input("Motion Prompt (Animasi Video)", value=st.session_state.motion_prompt)
-
     if st.button("✨ SUSUN PROMPT NEURAL", use_container_width=True, type="primary"):
         construct_prompt()
 
-# --- KANAN: PANEL OUTPUT & RENDER ---
+# --- KANAN: PANEL OUTPUT ---
 with col_right:
-    st.subheader("🖥️ Neural Output Panel")
+    st.subheader("🖥️ Hasil Neural Prompt")
     
-    if st.session_state.app_error:
-        st.error(f"Peringatan: {st.session_state.app_error}")
+    if st.session_state.generated_prompt:
+        st.success("✅ Prompt berhasil disusun! Silakan copy teks di bawah ini dan paste ke Gemini Advanced.")
+        st.code(st.session_state.generated_prompt, language="plaintext")
         
-    st.markdown("**PBR Neural Prompt:**")
-    st.code(st.session_state.generated_prompt if st.session_state.generated_prompt else "Tekan tombol 'SUSUN PROMPT NEURAL' di sebelah kiri...", language="plaintext")
-
-    # Display Area
-    st.markdown("---")
-    display_container = st.container(border=True)
-    with display_container:
-        if st.session_state.video_url:
-            st.video(st.session_state.video_url)
-        elif st.session_state.render_image_base64:
-            image_bytes = base64.b64decode(st.session_state.render_image_base64)
-            st.image(image_bytes, use_container_width=True)
-        else:
-            st.info("Viewport Standby. Silakan generate prompt dan render gambar.")
-            
-    # Action Buttons
-    action_col1, action_col2 = st.columns(2)
-    with action_col1:
-        if st.button("🖼️ RENDER IMAGE (BFF)", use_container_width=True, disabled=not bool(st.session_state.generated_prompt)):
-            with st.spinner("Memproses Render Image di Server..."):
-                handle_render_image()
-                st.rerun()
-                
-    with action_col2:
-        if st.button("🎬 GENERATE VIDEO", use_container_width=True, disabled=not bool(st.session_state.render_image_base64)):
-            handle_trigger_video()
-            st.rerun()
+        st.info("💡 **Tips Rendering di Gemini:**\nPastikan Anda meminta Gemini untuk membuat gambar menggunakan prompt di atas. Jika Anda ingin menyertakan gambar sketsa sebagai referensi, cukup upload gambar sketsa Anda di chat Gemini bersamaan dengan prompt ini.")
+    else:
+        st.info("👈 Silakan atur parameter di sebelah kiri dan klik **SUSUN PROMPT NEURAL**.")
