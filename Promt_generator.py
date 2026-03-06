@@ -171,71 +171,40 @@ def handle_render_image():
         st.session_state.app_error = "API Key Gemini belum diisi. Silakan masukkan di Sidebar sebelah kiri."
         return
 
-    try:
-        # 1. Inisialisasi client resmi Google GenAI
-        client = genai.Client(api_key=st.session_state.api_key)
-        
-        # 2. Mapping rasio gambar (Imagen 3 hanya menerima rasio standar tertentu)
-        rasio_mapping = {
-            "Landscape (16:9)": "16:9",
-            "Portrait / Story (9:16)": "9:16",
-            "Square / Feed (1:1)": "1:1",
-            "Classic Photo (4:3)": "4:3",
-            "Ultra Wide (4:1)": "16:9" # Fallback aman
-        }
-        aspect_ratio = rasio_mapping.get(st.session_state.rasio, "16:9")
-        
-        # 3. Request langsung ke engine Imagen 3 tanpa dummy
-        result = client.models.generate_images(
-            model='imagen-3.0-generate-001',
-            prompt=st.session_state.generated_prompt,
-            config=types.GenerateImagesConfig(
-                number_of_images=1,
-                aspect_ratio=aspect_ratio,
-                output_mime_type="image/jpeg"
-            )
-        )
-        
-        # 4. Ekstrak gambar langsung menjadi Base64 untuk dirender UI
-        if result.generated_images:
-            image_bytes = result.generated_images[0].image.image_bytes
-            st.session_state.render_image_base64 = get_base64_of_bytes(image_bytes)
-            st.session_state.app_error = None
-        else:
-            raise Exception("Engine Google Imagen tidak merespons dengan data gambar.")
-            
-    except Exception as e:
-        # Menangkap error bawaan dari Google API dengan rapi
-        st.session_state.app_error = f"Sistem API Error: {str(e)}"
-
-def handle_render_image():
-    if not st.session_state.generated_prompt:
-        st.session_state.app_error = "Silakan susun prompt terlebih dahulu."
-        return
-        
-    if not st.session_state.get("api_key"):
-        st.session_state.app_error = "API Key Gemini belum diisi. Silakan masukkan di Sidebar sebelah kiri."
-        return
-
-    # Endpoint resmi Imagen 3 dari Google AI Studio
     api_key = st.session_state.api_key
-    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key={api_key}"
     
-    # Mapping rasio gambar ke format yang didukung Imagen 3
+    # 1. AUTO-DETECT MODEL IMAGEN TERBAIK
+    target_model = "imagen-4.0-generate-001" # Fallback bawaan
+    try:
+        url_scan = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+        res_scan = requests.get(url_scan)
+        if res_scan.ok:
+            models_data = res_scan.json().get("models", [])
+            # Ambil semua model yang namanya mengandung "imagen"
+            imagen_models = [m.get("name").replace("models/", "") for m in models_data if "imagen" in m.get("name", "").lower()]
+            
+            if imagen_models:
+                # Prioritaskan versi ultra atau versi pertama yang ditemukan
+                ultra_models = [m for m in imagen_models if "ultra" in m.lower()]
+                target_model = ultra_models[0] if ultra_models else imagen_models[0]
+    except Exception:
+        pass # Jika scan gagal, tetap jalan menggunakan fallback
+        
+    # 2. EKSEKUSI RENDER GAMBAR
+    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:predict?key={api_key}"
+    
+    # Mapping rasio gambar
     rasio_mapping = {
         "Landscape (16:9)": "16:9",
         "Portrait / Story (9:16)": "9:16",
         "Square / Feed (1:1)": "1:1",
         "Classic Photo (4:3)": "4:3",
-        "Ultra Wide (4:1)": "16:9" # Fallback karena 4:1 tidak didukung secara native
+        "Ultra Wide (4:1)": "16:9" 
     }
     aspect_ratio = rasio_mapping.get(st.session_state.rasio, "16:9")
     
-    # Struktur Payload sesuai standar API Google
     payload = {
-        "instances": [
-            {"prompt": st.session_state.generated_prompt}
-        ],
+        "instances": [{"prompt": st.session_state.generated_prompt}],
         "parameters": {
             "sampleCount": 1,
             "aspectRatio": aspect_ratio
@@ -245,28 +214,28 @@ def handle_render_image():
     try:
         response = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'})
         
-        # Tangkap error jika API Key salah atau ada masalah server
         if not response.ok:
             err_data = response.json()
             error_msg = err_data.get("error", {}).get("message", f"HTTP {response.status_code}")
-            raise Exception(f"Gemini API Error: {error_msg}")
+            raise Exception(f"API Error ({target_model}): {error_msg}")
             
         result = response.json()
-        
-        # Imagen 3 mengembalikan data gambar dalam array predictions -> bytesBase64
         predictions = result.get("predictions")
+        
         if predictions and len(predictions) > 0:
             b64_image = predictions[0].get("bytesBase64")
             if b64_image:
                 st.session_state.render_image_base64 = b64_image
                 st.session_state.app_error = None
             else:
-                raise Exception("Gambar gagal diproses oleh model Imagen.")
+                raise Exception(f"Gambar gagal diproses oleh {target_model}.")
         else:
-            raise Exception("Respons dari Gemini API kosong atau tidak sesuai format.")
+            raise Exception("Respons dari API kosong atau format data berubah.")
             
     except Exception as e:
         st.session_state.app_error = str(e)
+
+
 
 # ==========================================
 # 5. UI RENDER (Streamlit Layout)
