@@ -207,3 +207,8 @@ DB_STORYTELLING_VIBE = [
     "Rainy Melancholy (Rintik hujan jatuh ke genangan air, memantulkan cahaya lampu, angin bertiup sedang)",
     "Golden Hour Romance (Cahaya senja menyapu tekstur material, partikel debu melayang di udara, sangat sinematik)"
 ]
+DB_ENGINE_VIDEO = [
+    "Kling 3.0 Omni (Terbaik untuk Multi-shot & Koherensi Spasial)",
+    "Luma Dream Machine (Terbaik untuk Navigasi Ruang Interior via NeRF)",
+    "OpenAI Sora 2 (Terbaik untuk Transisi Skala Besar)",
+    "Runway Gen-4.5 (Terbaik untuk Dynamic Motion Control)"
