@@ -4,6 +4,8 @@ import os
 import io
 from PIL import Image
 import numpy as np
+
+# Import Kanvas Inpainting
 try:
     from streamlit_drawable_canvas import st_canvas
     HAS_CANVAS = True
@@ -17,6 +19,11 @@ import prompt_logic as pl
 from google import genai
 from google.genai import types
 
+
+# ==========================================
+# 0. KONFIGURASI HALAMAN (WAJIB PALING ATAS)
+# ==========================================
+st.set_page_config(page_title="SmartPromt Generator v2.1", layout="wide", initial_sidebar_state="expanded")
 
 
 # ==========================================
@@ -46,6 +53,7 @@ with st.sidebar:
         else:
             st.error("🚨 Kunci Akses Diperlukan!")
             st.stop()
+
 
 # ==========================================
 # 2. INITIALIZE SESSION STATE (Memori Aplikasi)
@@ -81,7 +89,6 @@ if 'init' not in st.session_state:
     st.session_state.conflicts = []
     st.session_state.history_ledger = []
     
-    # INI DIA VARIABEL YANG TADI HILANG:
     st.session_state.custom_presets = {} 
     
     st.session_state.mode_render = "📸 Image (Still Photo)"
@@ -99,10 +106,6 @@ if 'init' not in st.session_state:
     st.session_state.mask_cyan = "Besi / Aluminium (Steel/Aluminium)"
     st.session_state.mask_magenta = "Marmer / Granit (Marble/Granite)"
 
-# ==========================================
-# (Sisa kode mulai dari def handle_random() ada di bawah ini)
-# ==========================================
-    
 
 def handle_random():
     s = st.session_state
@@ -124,10 +127,10 @@ def load_preset(preset_name):
             if key in st.session_state:
                 st.session_state[key] = value
 
-# ==========================================
-# 2. UI RENDER (Streamlit Layout)
-# ==========================================
 
+# ==========================================
+# 3. UI RENDER (Streamlit Layout)
+# ==========================================
 
 st.markdown("""
 <style>
@@ -274,6 +277,7 @@ with col_left:
 
     if st.button("✨ SUSUN PROMPT NEURAL", use_container_width=True, type="primary"):
         pl.construct_prompt()
+
 # --- KOLOM KANAN (OUTPUT & INPAINTING) ---
 with col_right:
     # KITA TAMBAHKAN 1 TAB BARU: 🖌️ Inpainting (Revisi)
@@ -446,7 +450,6 @@ with col_right:
                             st.warning("Mohon ketik Instruksi Mikro terlebih dahulu (Misal: 'Change to wood material').")
                     else:
                         st.warning("⚠️ Anda belum melukis area masking di atas gambar. Gunakan kuas untuk menandai area yang ingin diubah.")
-                
 
     with tab_hist:
         if not st.session_state.history_ledger:
@@ -455,14 +458,3 @@ with col_right:
             for i, item in enumerate(st.session_state.history_ledger):
                 with st.expander(f"{item['title']} (Terbaru)" if i==0 else item['title'], expanded=(i==0)):
                     st.code(item['prompt'], language="markdown")
-            
-    with tab_hist:
-        if not st.session_state.history_ledger:
-            st.caption("Riwayat prompt Anda akan muncul di sini (Maksimal 10 terakhir).")
-        else:
-            for i, item in enumerate(st.session_state.history_ledger):
-                with st.expander(f"{item['title']} (Terbaru)" if i==0 else item['title'], expanded=(i==0)):
-                    st.code(item['prompt'], language="markdown")
-
-
-
