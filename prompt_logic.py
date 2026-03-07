@@ -75,18 +75,19 @@ def construct_prompt():
     if s.uploaded_sketch is not None:
         base_arch += f"\n[LAYER 2 RESTRICTION: {s.ai_control.upper()}]. STRICT MANDATE: Geometry, structural proportions, and absolute elevations must 100% follow the topology of the uploaded sketch. DO NOT hallucinate basic architectural elements.\n"
         
-        # LOGIKA SEMANTIC COLOR MASKING
+        # LOGIKA VISUAL COLOR MASKING (SKETCHUP STANDARDS)
         if s.use_color_masking:
-            base_arch += "\n[SEMANTIC MATERIAL MASKING MANDATE]: Strictly map the following PBR materials to their corresponding solid color zones in the attached segmentation mask:\n"
-            if s.mask_red: base_arch += f"- RED ZONE: {enhance_with_pbr(s.mask_red)}\n"
-            if s.mask_blue: base_arch += f"- BLUE ZONE: {enhance_with_pbr(s.mask_blue)}\n"
-            if s.mask_green: base_arch += f"- GREEN ZONE: {enhance_with_pbr(s.mask_green)}\n"
-            if s.mask_yellow: base_arch += f"- YELLOW ZONE: {enhance_with_pbr(s.mask_yellow)}\n"
-            if s.mask_purple: base_arch += f"- PURPLE ZONE: {enhance_with_pbr(s.mask_purple)}\n"
-            if s.mask_orange: base_arch += f"- ORANGE ZONE: {enhance_with_pbr(s.mask_orange)}\n"
-            if s.mask_cyan: base_arch += f"- CYAN ZONE: {enhance_with_pbr(s.mask_cyan)}\n"
-            if s.mask_magenta: base_arch += f"- MAGENTA ZONE: {enhance_with_pbr(s.mask_magenta)}\n"
-            base_arch += "CRITICAL: DO NOT mix materials across color boundaries. Maintain sharp material transitions exactly as defined by the color blocks.\n"
+            base_arch += "\n[MATERIAL MAPPING MANDATE]: Strictly map the following PBR materials to their corresponding visual color zones in the attached sketch/reference image:\n"
+            if s.mask_white: base_arch += f"- WHITE/LIGHT SURFACES: {enhance_with_pbr(s.mask_white)}\n"
+            if s.mask_gray: base_arch += f"- GRAY SURFACES: {enhance_with_pbr(s.mask_gray)}\n"
+            if s.mask_dark: base_arch += f"- DARK/BLACK SURFACES: {enhance_with_pbr(s.mask_dark)}\n"
+            if s.mask_brown: base_arch += f"- BROWN/WOOD-TONE SURFACES: {enhance_with_pbr(s.mask_brown)}\n"
+            if s.mask_brick: base_arch += f"- BRICK-RED/TERRACOTTA SURFACES: {enhance_with_pbr(s.mask_brick)}\n"
+            if s.mask_blue: base_arch += f"- LIGHT BLUE/TRANSPARENT SURFACES: {enhance_with_pbr(s.mask_blue)}\n"
+            if s.mask_cream: base_arch += f"- CREAM/YELLOW SURFACES: {enhance_with_pbr(s.mask_cream)}\n"
+            if s.mask_green: base_arch += f"- GREEN SURFACES: {enhance_with_pbr(s.mask_green)}\n"
+            base_arch += "CRITICAL: DO NOT mix materials. Maintain sharp material transitions exactly as defined by the visual boundaries of these specific colors in the base image.\n"
+        
                     
     if s.use_ref:
         base_arch += "Please match the overall mood, color palette, and lighting style of the ATTACHED REFERENCE IMAGE. "
