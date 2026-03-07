@@ -91,11 +91,12 @@ DB_TEKNIK_CAHAYA = [
 ]
 
 DB_PRESENTASI = {
-    "📸 Clean Photorealistic": "clean, no text, pure photography style",
-    "📏 Technical Concept": "architectural concept sheet style, mixed media, photorealistic render overlaid with hand-drawn technical annotations",
-    "📝 Blueprint / Wireframe": "blueprint style, white lines on blue background, technical drawing, wireframe structural view",
-    "🎨 Watercolor Sketch": "watercolor painting style, soft edges, artistic architectural sketch, ink outline"
+    "Clean Photorealistic": "clean, no text, pure photography style",
+    "Technical Concept": "architectural concept sheet style, mixed media, photorealistic render overlaid with hand-drawn technical annotations",
+    "Blueprint / Wireframe": "blueprint style, white lines on blue background, technical drawing, wireframe structural view",
+    "Watercolor Sketch": "watercolor painting style, soft edges, artistic architectural sketch, ink outline"
 }
+
 
 DB_SKENARIO = [
     "Standard Clear Architectural Shot",
@@ -186,21 +187,20 @@ DB_AI_CONTROL = [
     "Normal Map (Fokus pada topologi permukaan dan relief fasad)",
     "Semantic Segmentation / Color Masking (Pemetaan material absolut)"
 ]
-
 DB_PRESETS = {
-    "Pilih Preset Bawaan...": None,
-    "🏢 Cyberpunk Skyscraper (Malam)": {
+    "Cyberpunk Skyscraper (Malam)": {
         "tipe": "Futuristic Skyscraper", "gaya": "Zaha Hadid Style", "material": "reflective glass facade",
         "suasana": "Cinematic Night Lighting", "cuaca": "Cinematic Cyberpunk Smog (Asap/Polusi Neon)",
         "view": "[EXT] Worm's Eye View (Low Angle)", "temp_warna": "RGB / Neon Accents (Cyberpunk, Futuristic)",
         "fixture_ext": "Architectural Facade Up-lighting", "teknik_cahaya": "Cinematic Volumetric Lighting (God Rays)",
         "tapak": "Dense Urban Infill (Perkotaan padat, diapit gedung lain)", "vegetasi": "None / Pure Hardscape (Tanpa tanaman, fokus pada material keras)",
-        "rasio": "Portrait / Story (9:16)", "presentasi": "📸 Clean Photorealistic",
+        "rasio": "Portrait / Story (9:16)", "presentasi": "Clean Photorealistic", # Pastikan ini sesuai dengan key DB_PRESENTASI yang baru
         "skenario": "Standard Clear Architectural Shot", "engine": "Unreal Engine 5",
         "lensa_khusus": "14mm Ultra-Wide Rectilinear (Interior sempit terlihat megah)", "kamera_film": "Cinematic Anamorphic (Arri Alexa, flare lensa horizontal)",
         "weathering": "Subtle Weathering (Tanda pemakaian ringan, debu halus di sudut)"
     }
 }
+
 # === KAMUS TERJEMAHAN MATERIAL PBR (INDONESIA -> ENGLISH PBR LOGIC) ===
 KAMUS_PBR = {
     # --- Beton ---
