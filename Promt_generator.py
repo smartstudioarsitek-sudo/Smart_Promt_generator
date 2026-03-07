@@ -491,7 +491,7 @@ with col_right:
                                 input={
                                     "image": uploaded_sketch_file,
                                     "prompt": st.session_state.generated_prompt + ", best quality, extremely detailed, architectural visualization, 8k resolution",
-                                    "structure": "hough", # hough adalah algoritma MLSD untuk mendeteksi garis lurus arsitektur yang sangat presisi
+                                    "structure": "hough", # hough adalah algoritma MLSD untuk mendeteksi garis lurus arsitektur
                                     "negative_prompt": "longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, warped perspective, converging lines",
                                     "num_outputs": 1,
                                     "image_resolution": 512,
@@ -502,8 +502,8 @@ with col_right:
                             
                             # 4. Tampilkan Hasil
                             if output and len(output) > 0:
-                                # Model ini mengembalikan gambar render langsung di index ke-0
-                                final_image_url = output[0] 
+                                # 🛠️ KUNCI PERBAIKAN: Tambahkan str() untuk mengubah FileOutput menjadi Teks URL
+                                final_image_url = str(output[0])
                                 
                                 st.success("✅ Geometri berhasil dikunci & Render Selesai!")
                                 st.image(final_image_url, caption="Render Final ControlNet (Presisi 99%)", use_column_width=True)
@@ -515,7 +515,7 @@ with col_right:
                         except Exception as e:
                             st.error(f"Terjadi kesalahan pada server Replicate: {e}")
                             st.info("💡 Pastikan API Token Anda valid dan Anda memiliki saldo kredit di akun Replicate Anda.")
-                                                    
+                                                                            
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
             
