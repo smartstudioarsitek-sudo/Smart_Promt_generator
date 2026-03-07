@@ -2,15 +2,8 @@ import streamlit as st
 import random
 import os
 import io
-from PIL import Image
 import numpy as np
-
-# Import Kanvas Inpainting
-try:
-    from streamlit_drawable_canvas import st_canvas
-    HAS_CANVAS = True
-except ImportError:
-    HAS_CANVAS = False
+from PIL import Image
 
 import database_params as db
 import prompt_logic as pl
@@ -19,12 +12,17 @@ import prompt_logic as pl
 from google import genai
 from google.genai import types
 
+# Import Kanvas Inpainting
+try:
+    from streamlit_drawable_canvas import st_canvas
+    HAS_CANVAS = True
+except ImportError:
+    HAS_CANVAS = False
 
 # ==========================================
 # 0. KONFIGURASI HALAMAN (WAJIB PALING ATAS)
 # ==========================================
 st.set_page_config(page_title="SmartPromt Generator v2.1", layout="wide", initial_sidebar_state="expanded")
-
 
 # ==========================================
 # 1. KONFIGURASI KEAMANAN & API
@@ -53,7 +51,6 @@ with st.sidebar:
         else:
             st.error("🚨 Kunci Akses Diperlukan!")
             st.stop()
-
 
 # ==========================================
 # 2. INITIALIZE SESSION STATE (Memori Aplikasi)
@@ -88,7 +85,6 @@ if 'init' not in st.session_state:
     st.session_state.generated_prompt = ""
     st.session_state.conflicts = []
     st.session_state.history_ledger = []
-    
     st.session_state.custom_presets = {} 
     
     st.session_state.mode_render = "📸 Image (Still Photo)"
@@ -105,7 +101,6 @@ if 'init' not in st.session_state:
     st.session_state.mask_orange = "Bata Terracotta (Terracotta Brick)"
     st.session_state.mask_cyan = "Besi / Aluminium (Steel/Aluminium)"
     st.session_state.mask_magenta = "Marmer / Granit (Marble/Granite)"
-
 
 def handle_random():
     s = st.session_state
@@ -127,11 +122,9 @@ def load_preset(preset_name):
             if key in st.session_state:
                 st.session_state[key] = value
 
-
 # ==========================================
 # 3. UI RENDER (Streamlit Layout)
 # ==========================================
-
 st.markdown("""
 <style>
     .header-box { background-color: #ffffff; padding: 1rem; border-bottom: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;}
@@ -189,42 +182,38 @@ with col_left:
     
     with tab1:
         st.markdown('<div class="section-title">📐 Geometry & Sketch Upload</div>', unsafe_allow_html=True)
-        
-        # 1. Gunakan variabel lokal untuk uploader, dan dukung jfif/webp
-        uploaded_sketch_file = st.file_uploader("Upload Sketsa Garis / Base Image", type=["jpg", "png", "jpeg", "jfif", "webp"])
+        # PERBAIKAN BYPASS TIPE UNTUK JFIF
+        uploaded_sketch_file = st.file_uploader("Upload Sketsa Garis / Base Image", type=None, key="sketch_up")
         
         if uploaded_sketch_file is not None:
-            # 2. Buka gambar dengan PIL (Cara paling aman di Streamlit Cloud)
-            sketch_img = Image.open(uploaded_sketch_file)
-            st.image(sketch_img, caption="Preview Sketsa Aktual", use_column_width=True)
-           
-            
-            # 3. Simpan status (Flag) ke memori agar logika prompt mendeteksinya
-            st.session_state.uploaded_sketch = True 
-            
-            st.success("✅ Sketsa terdeteksi! 'Vision Constraint' akan diaktifkan.")
-            st.session_state.ai_control = st.selectbox("Metode Restriksi Struktural AI (Lapisan 2):", db.DB_AI_CONTROL, index=db.DB_AI_CONTROL.index(st.session_state.ai_control)) 
+            try:
+                sketch_img = Image.open(uploaded_sketch_file)
+                # PERBAIKAN FATAL: GANTI use_container_width JADI use_column_width
+                st.image(sketch_img, caption="Preview Sketsa Aktual", use_column_width=True) 
+                st.session_state.uploaded_sketch = True
+                st.success("✅ Sketsa terdeteksi! 'Vision Constraint' akan diaktifkan.")
+                st.session_state.ai_control = st.selectbox("Metode Restriksi Struktural AI (Lapisan 2):", db.DB_AI_CONTROL, index=db.DB_AI_CONTROL.index(st.session_state.ai_control)) 
+            except Exception:
+                st.error("❌ File yang diunggah bukan gambar yang valid.")
+                st.session_state.uploaded_sketch = None
         else:
-            # 4. Kosongkan memori jika gambar dihapus/tidak ada
             st.session_state.uploaded_sketch = None
-     
             
-            # --- UI BARU UNTUK FITUR COLOR MASKING ---
-            st.markdown("---")
-            st.session_state.use_color_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", value=st.session_state.use_color_masking)
-            if st.session_state.use_color_masking:
-                st.info("💡 Pastikan Anda mengunggah gambar 'Color Mask' bersolusi tinggi dengan warna kontras (merah, biru, hijau murni, dsb) di chat Gemini.")
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.session_state.mask_red = st.text_input("🔴 Merah (Red Zone):", value=st.session_state.mask_red)
-                    st.session_state.mask_green = st.text_input("🟢 Hijau (Green Zone):", value=st.session_state.mask_green)
-                    st.session_state.mask_purple = st.text_input("🟣 Ungu (Purple Zone):", value=st.session_state.mask_purple)
-                    st.session_state.mask_cyan = st.text_input("🩵 Cyan (Cyan Zone):", value=st.session_state.mask_cyan)
-                with c2:
-                    st.session_state.mask_blue = st.text_input("🔵 Biru (Blue Zone):", value=st.session_state.mask_blue)
-                    st.session_state.mask_yellow = st.text_input("🟡 Kuning (Yellow Zone):", value=st.session_state.mask_yellow)
-                    st.session_state.mask_orange = st.text_input("🟠 Oranye (Orange Zone):", value=st.session_state.mask_orange)
-                    st.session_state.mask_magenta = st.text_input("🩷 Magenta (Magenta Zone):", value=st.session_state.mask_magenta)
+        st.markdown("---")
+        st.session_state.use_color_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", value=st.session_state.use_color_masking)
+        if st.session_state.use_color_masking:
+            st.info("💡 Pastikan Anda mengunggah gambar 'Color Mask' bersolusi tinggi dengan warna kontras di chat Gemini.")
+            c1, c2 = st.columns(2)
+            with c1:
+                st.session_state.mask_red = st.text_input("🔴 Merah (Red Zone):", value=st.session_state.mask_red)
+                st.session_state.mask_green = st.text_input("🟢 Hijau (Green Zone):", value=st.session_state.mask_green)
+                st.session_state.mask_purple = st.text_input("🟣 Ungu (Purple Zone):", value=st.session_state.mask_purple)
+                st.session_state.mask_cyan = st.text_input("🩵 Cyan (Cyan Zone):", value=st.session_state.mask_cyan)
+            with c2:
+                st.session_state.mask_blue = st.text_input("🔵 Biru (Blue Zone):", value=st.session_state.mask_blue)
+                st.session_state.mask_yellow = st.text_input("🟡 Kuning (Yellow Zone):", value=st.session_state.mask_yellow)
+                st.session_state.mask_orange = st.text_input("🟠 Oranye (Orange Zone):", value=st.session_state.mask_orange)
+                st.session_state.mask_magenta = st.text_input("🩷 Magenta (Magenta Zone):", value=st.session_state.mask_magenta)
                         
         st.markdown("---")
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
@@ -266,7 +255,7 @@ with col_left:
         if "Video" in st.session_state.mode_render:
             st.markdown('<div class="section-title">🎥 Cinematic Director (Video Motion)</div>', unsafe_allow_html=True)
             st.info("💡 Mode Video aktif! Prompt ini sangat cocok untuk Google Veo, Luma Dream Machine, atau Sora.")
-            st.session_state.engine_video = st.selectbox("Engine Video Target (Lapisan Temporal)", db.DB_ENGINE_VIDEO, index=db.DB_ENGINE_VIDEO.index(st.session_state.engine_video))
+            st.session_state.engine_video = st.selectbox("Engine Video Target", db.DB_ENGINE_VIDEO, index=db.DB_ENGINE_VIDEO.index(st.session_state.engine_video))
             st.session_state.camera_motion = st.selectbox("Koreografi Kamera", db.DB_CAMERA_MOTION, index=db.DB_CAMERA_MOTION.index(st.session_state.camera_motion))
             st.session_state.storytelling_vibe = st.selectbox("Nyawa & Suasana", db.DB_STORYTELLING_VIBE, index=db.DB_STORYTELLING_VIBE.index(st.session_state.storytelling_vibe))
             st.markdown("---")
@@ -291,9 +280,11 @@ with col_left:
     if st.button("✨ SUSUN PROMPT NEURAL", use_container_width=True, type="primary"):
         pl.construct_prompt()
 
-# --- KOLOM KANAN (OUTPUT & INPAINTING) ---
+
+# ==========================================
+# KOLOM KANAN (OUTPUT & INPAINTING)
+# ==========================================
 with col_right:
-    # KITA TAMBAHKAN 1 TAB BARU: 🖌️ Inpainting (Revisi)
     tab_out, tab_inpaint, tab_hist = st.tabs(["🖥️ Output (Prompt & Visual)", "🖌️ Inpainting (Revisi)", "📚 Prompt Ledger (Riwayat)"])
     
     with tab_out:
@@ -330,8 +321,8 @@ with col_right:
                         
                         for generated_image in result.generated_images:
                             image = Image.open(io.BytesIO(generated_image.image.image_bytes))
+                            # PERBAIKAN FATAL: GANTI use_container_width JADI use_column_width
                             st.image(image, caption=f"Render Final: {st.session_state.tipe}", use_column_width=True)
-                           
                             
                             buf = io.BytesIO()
                             image.save(buf, format="JPEG")
@@ -349,9 +340,6 @@ with col_right:
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
             
-    # ========================================================
-    # TAB BARU: KANVAS INPAINTING (SUTRADARA REVISI)
-    # ========================================================
     with tab_inpaint:
         st.markdown("### 🖌️ Kanvas Revisi (Inpainting)")
         st.info("Unggah gambar hasil render final Anda (dari Gemini/Midjourney/API), lalu 'lukis' area yang ingin direvisi.")
@@ -359,113 +347,101 @@ with col_right:
         if not HAS_CANVAS:
             st.error("🚨 Pustaka `streamlit-drawable-canvas` belum terdeteksi. Silakan install via terminal: `pip install streamlit-drawable-canvas`")
         else:
-            base_img_file = st.file_uploader("🖼️ Unggah Gambar Base Render", type=["png", "jpg", "jpeg", "jfif", "webp"], key="inpaint_upload")
+            # PERBAIKAN UPLOAD JFIF BYPASS
+            base_img_file = st.file_uploader("🖼️ Unggah Gambar Base Render", type=None, key="inpaint_upload")
                         
             if base_img_file is not None:
-                base_image = Image.open(base_img_file).convert("RGBA")
-                
-                # Skala gambar agar muat di UI (Maks lebar 600px)
-                max_width = 600
-                if base_image.width > max_width:
-                    ratio = max_width / base_image.width
-                    new_height = int(base_image.height * ratio)
-                    base_image_resized = base_image.resize((max_width, new_height))
-                else:
-                    base_image_resized = base_image
-
-                st.markdown("**1. Lukis Area Masking**")
-                col_canvas_tools, col_canvas = st.columns([1, 3])
-                
-                with col_canvas_tools:
-                    stroke_width = st.slider("Ukuran Kuas (Brush)", 10, 100, 40)
-                    st.caption("Gunakan kuas untuk menutupi area yang ingin diubah. Area yang diwarnai putih akan diproses oleh AI.")
-                
-                with col_canvas:
-                    # Komponen Kanvas Interaktif
-                    canvas_result = st_canvas(
-                        fill_color="rgba(255, 255, 255, 0.7)", # Warna isian agak transparan
-                        stroke_width=stroke_width,
-                        stroke_color="#FFFFFF", # Kuas warna putih
-                        background_image=base_image_resized,
-                        update_streamlit=True,
-                        height=base_image_resized.height,
-                        width=base_image_resized.width,
-                        drawing_mode="freedraw",
-                        key="canvas_inpainting",
-                    )
-                
-                st.markdown("---")
-                st.markdown("**2. Instruksi Mikro (The One Edit Rule)**")
-                st.write("Sesuai standar arsitektur, masukkan HANYA 1 perintah spesifik pendek (< 200 karakter) untuk area yang ditandai.")
-                
-                micro_prompt = st.text_input("Contoh: 'Change the wall paint to dark green' atau 'Add a modern leather sofa'", max_chars=200)
-                
-                if st.button("✨ Eksekusi Revisi", type="primary", use_container_width=True):
-                    # Validasi 1: Pastikan pengguna sudah mencoret sesuatu di kanvas
-                    if canvas_result.image_data is not None and np.any(canvas_result.image_data[:, :, 3] > 0):
-                        # Validasi 2: Pastikan ada instruksi mikro
-                        if micro_prompt:
-                            with st.spinner("Mengirim masker dan instruksi ke Google AI (Inpainting)..."):
-                                try:
-                                    # 1. EKSTRAKSI MASKER (Hitam-Putih) dari coretan kanvas
-                                    # Buat kanvas kosong warna hitam
-                                    mask_array = np.zeros((base_image_resized.height, base_image_resized.width), dtype=np.uint8)
-                                    # Area yang dicoret pengguna (Alpha > 0) diubah jadi warna putih (255)
-                                    mask_array[canvas_result.image_data[:, :, 3] > 0] = 255
-                                    # Konversi matriks angka menjadi file gambar Masker
-                                    mask_image = Image.fromarray(mask_array, mode="L")
-                                    
-                                    # Pastikan gambar base formatnya RGB murni sebelum dikirim ke server
-                                    base_rgb = base_image_resized.convert("RGB")
-                                    
-                                    # 2. PANGGIL API EDIT GAMBAR (MODUL 2)
-                                    # Menggunakan model Imagen 4.0 yang stabil di akun Anda
-                                    result = client.models.edit_images(
-                                        model='imagen-4.0-generate-001',
-                                        prompt=micro_prompt,
-                                        base_image=base_rgb,
-                                        mask_image=mask_image,
-                                        config=types.EditImagesConfig(
-                                            number_of_images=1,
-                                            output_mime_type="image/jpeg",
-                                            edit_mode="INPAINTING_INSERT" # Kunci agar tidak mengubah area di luar masker
-                                        )
-                                    )
-                                    
-                                    # 3. TAMPILKAN HASILNYA
-                                    st.success("✅ Revisi Selesai! (Aturan 'The One Edit Rule' berhasil diterapkan)")
-                                    
-                                    for generated_image in result.generated_images:
-                                        edited_img = Image.open(io.BytesIO(generated_image.image.image_bytes))
-                                        
-                                        # Tampilkan gambar berdampingan (Sebelum vs Sesudah)
-                                        col_res1, col_res2 = st.columns(2)
-                                        with col_res1:
-                                            st.image(base_rgb, caption="Gambar Asli", use_column_width=True)
-                                            
-                                        with col_res2:
-                                            st.image(edited_img, caption=f"Hasil Revisi", use_column_width=True)
-                                            
-                                            
-                                        # Tombol Unduh Revisi
-                                        buf = io.BytesIO()
-                                        edited_img.save(buf, format="JPEG")
-                                        byte_im = buf.getvalue()
-                                        st.download_button(
-                                            label="💾 Unduh Hasil Revisi",
-                                            data=byte_im,
-                                            file_name="Revisi_Inpainting.jpg",
-                                            mime="image/jpeg",
-                                            use_container_width=True
-                                        )
-                                        
-                                except Exception as e:
-                                    st.error(f"Gagal memproses revisi inpainting: {e}")
-                                    st.info("Pastikan koneksi internet stabil dan kuota API Anda masih tersedia.")
-                        else:
-                            st.warning("Mohon ketik Instruksi Mikro terlebih dahulu (Misal: 'Change to wood material').")
+                try:
+                    base_image = Image.open(base_img_file).convert("RGBA")
+                    
+                    max_width = 600
+                    if base_image.width > max_width:
+                        ratio = max_width / base_image.width
+                        new_height = int(base_image.height * ratio)
+                        base_image_resized = base_image.resize((max_width, new_height))
                     else:
-                        st.warning("⚠️ Anda belum melukis area masking di atas gambar. Gunakan kuas untuk menandai area yang ingin diubah.")
+                        base_image_resized = base_image
+
+                    st.markdown("**1. Lukis Area Masking**")
+                    col_canvas_tools, col_canvas = st.columns([1, 3])
+                    
+                    with col_canvas_tools:
+                        stroke_width = st.slider("Ukuran Kuas (Brush)", 10, 100, 40)
+                        st.caption("Gunakan kuas untuk menutupi area yang ingin diubah. Area yang diwarnai putih akan diproses oleh AI.")
+                    
+                    with col_canvas:
+                        canvas_result = st_canvas(
+                            fill_color="rgba(255, 255, 255, 0.7)", 
+                            stroke_width=stroke_width,
+                            stroke_color="#FFFFFF", 
+                            background_image=base_image_resized,
+                            update_streamlit=True,
+                            height=base_image_resized.height,
+                            width=base_image_resized.width,
+                            drawing_mode="freedraw",
+                            key="canvas_inpainting",
+                        )
+                    
+                    st.markdown("---")
+                    st.markdown("**2. Instruksi Mikro (The One Edit Rule)**")
+                    micro_prompt = st.text_input("Contoh: 'Change the wall paint to dark green' atau 'Add a modern leather sofa'", max_chars=200)
+                    
+                    if st.button("✨ Eksekusi Revisi", type="primary", use_container_width=True):
+                        if canvas_result.image_data is not None and np.any(canvas_result.image_data[:, :, 3] > 0):
+                            if micro_prompt:
+                                with st.spinner("Mengirim masker dan instruksi ke Google AI (Inpainting)..."):
+                                    try:
+                                        mask_array = np.zeros((base_image_resized.height, base_image_resized.width), dtype=np.uint8)
+                                        mask_array[canvas_result.image_data[:, :, 3] > 0] = 255
+                                        mask_image = Image.fromarray(mask_array, mode="L")
+                                        
+                                        base_rgb = base_image_resized.convert("RGB")
+                                        
+                                        result = client.models.edit_images(
+                                            model='imagen-4.0-generate-001',
+                                            prompt=micro_prompt,
+                                            base_image=base_rgb,
+                                            mask_image=mask_image,
+                                            config=types.EditImagesConfig(
+                                                number_of_images=1,
+                                                output_mime_type="image/jpeg",
+                                                edit_mode="INPAINTING_INSERT" 
+                                            )
+                                        )
+                                        
+                                        st.success("✅ Revisi Selesai! (Aturan 'The One Edit Rule' berhasil diterapkan)")
+                                        
+                                        for generated_image in result.generated_images:
+                                            edited_img = Image.open(io.BytesIO(generated_image.image.image_bytes))
+                                            
+                                            col_res1, col_res2 = st.columns(2)
+                                            with col_res1:
+                                                # PERBAIKAN FATAL: GANTI use_container_width JADI use_column_width
+                                                st.image(base_rgb, caption="Gambar Asli (Sebelum)", use_column_width=True)
+                                            with col_res2:
+                                                # PERBAIKAN FATAL: GANTI use_container_width JADI use_column_width
+                                                st.image(edited_img, caption=f"Hasil Revisi: {micro_prompt}", use_column_width=True)
+                                                
+                                            buf = io.BytesIO()
+                                            edited_img.save(buf, format="JPEG")
+                                            byte_im = buf.getvalue()
+                                            st.download_button(
+                                                label="💾 Unduh Hasil Revisi",
+                                                data=byte_im,
+                                                file_name="Revisi_Inpainting.jpg",
+                                                mime="image/jpeg",
+                                                use_container_width=True
+                                            )
+                                            
+                                    except Exception as e:
+                                        st.error(f"Gagal memproses revisi inpainting: {e}")
+                                        st.info("Pastikan koneksi internet stabil dan kuota API Anda masih tersedia.")
+                            else:
+                                st.warning("Mohon ketik Instruksi Mikro terlebih dahulu (Misal: 'Change to wood material').")
+                        else:
+                            st.warning("⚠️ Anda belum melukis area masking di atas gambar. Gunakan kuas untuk menandai area yang ingin diubah.")
+                except Exception:
+                     st.error("❌ File yang Anda unggah bukan format gambar yang bisa dibaca.")
 
     with tab_hist:
         if not st.session_state.history_ledger:
