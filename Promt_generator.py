@@ -196,7 +196,8 @@ with col_left:
         if uploaded_sketch_file is not None:
             # 2. Buka gambar dengan PIL (Cara paling aman di Streamlit Cloud)
             sketch_img = Image.open(uploaded_sketch_file)
-            st.image(sketch_img, caption="Preview Sketsa Aktual", use_container_width=True)
+            st.image(sketch_img, caption="Preview Sketsa Aktual", use_column_width=True)
+           
             
             # 3. Simpan status (Flag) ke memori agar logika prompt mendeteksinya
             st.session_state.uploaded_sketch = True 
@@ -329,7 +330,8 @@ with col_right:
                         
                         for generated_image in result.generated_images:
                             image = Image.open(io.BytesIO(generated_image.image.image_bytes))
-                            st.image(image, caption=f"Render Final: {st.session_state.tipe}", use_container_width=True)
+                            st.image(image, caption=f"Render Final: {st.session_state.tipe}", use_column_width=True)
+                           
                             
                             buf = io.BytesIO()
                             image.save(buf, format="JPEG")
@@ -439,9 +441,11 @@ with col_right:
                                         # Tampilkan gambar berdampingan (Sebelum vs Sesudah)
                                         col_res1, col_res2 = st.columns(2)
                                         with col_res1:
-                                            st.image(base_rgb, caption="Gambar Asli (Sebelum)", use_container_width=True)
+                                            st.image(base_rgb, caption="Gambar Asli", use_column_width=True)
+                                            
                                         with col_res2:
-                                            st.image(edited_img, caption=f"Hasil Revisi: {micro_prompt}", use_container_width=True)
+                                            st.image(edited_img, caption=f"Hasil Revisi", use_column_width=True)
+                                            
                                             
                                         # Tombol Unduh Revisi
                                         buf = io.BytesIO()
