@@ -180,10 +180,29 @@ def construct_prompt():
         "Establish spatial scale using realistic depth of field with subtle blurred foreground elements (e.g., foliage or silhouettes). "
         f"{tilt_shift_mandate}"
     )
-
     # --- 4. MATERIAL & KONTEKS SITE ---
     context_setup = f"Physically Based Base Materials: {pbr_material_desc}. Material Condition/Weathering: {weathering.split(' (')[0]}. "
     context_setup += f"Site Context: {tapak.split(' (')[0]}. Landscaping: {vegetasi.split(' (')[0]}. "
+
+    # 🛠️ FASE 3 (GRAND FINALE): INJEKSI STANDAR KUNKUN VISUAL (Cross-Override & Storytelling)
+    
+    # A. Sabotase Cuaca Terhadap Material (Weather-Material Override)
+    if "Rain" in cuaca or "Hujan" in cuaca:
+        context_setup += "[WEATHER-MATERIAL OVERRIDE]: Ground surfaces (especially asphalt or hardscapes) MUST be rendered as heavily puddled wet surfaces with extreme specular environmental and neon light bounce, exhibiting diffuse anisotropic water reflections. "
+    elif "Mist" in cuaca or "Fog" in cuaca or "Kabut" in cuaca:
+        context_setup += "[WEATHER-MATERIAL OVERRIDE]: Surfaces must exhibit subtle dampness, moisture clinging to material edges, and heavy atmospheric scattering reducing distant micro-contrast. "
+
+    # B. Injeksi Skala Manusia & Penceritaan Emosional (Human Scale & Narrative)
+    storytelling_mandate = ""
+    # Jika skenario menghendaki elemen manusia atau vibe aktivitas sibuk
+    if "Human" in skenario or "Lifestyle" in skenario or "Busy" in getattr(s, 'storytelling_vibe', ''):
+        storytelling_mandate = "[CINEMATIC NARRATIVE]: Integrate scale-giving human figures exhibiting cinematic motion blur. Position them naturally to guide the eye towards the main architectural focal point, adding a profound sense of life, kinetic energy, and lived-in atmosphere. "
+    else:
+        # Skala halus untuk shot standar agar bangunan tidak terasa seperti kota mati
+        storytelling_mandate = "[ARCHITECTURAL SCALE]: Subtly incorporate distant or partially obscured human silhouettes or signs of life (e.g., warm interior lighting hinting at occupancy) to establish realistic monumental proportions without distracting from the main geometry. "
+        
+    context_setup += storytelling_mandate
+    
 
     # --- 5. PERAKITAN PROMPT FINAL & PERBAIKAN LOGIC BYPASS ---
     is_video = "Video" in mode_render
