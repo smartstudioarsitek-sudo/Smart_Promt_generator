@@ -142,8 +142,9 @@ if 'init' not in st.session_state:
     st.session_state.cuaca = db.DB_CUACA_SIANG[0] 
     st.session_state.view = db.DB_VIEW[0]
     st.session_state.rasio = "Landscape (16:9)"
-    st.session_state.presentasi = "📸 Clean Photorealistic"
-    st.session_state.skenario = db.DB_SKENARIO[0]
+    # Memanggil nilai pertama dari kamus secara otomatis (Bebas Error Emoji)
+    st.session_state.presentasi = list(db.DB_PRESENTASI.keys())[0] 
+    st.session_state.skenario = db.DB_SKENARIO[0]  
     st.session_state.engine = db.DB_ENGINE[0]
     st.session_state.temp_warna = db.DB_TEMP_WARNA[0]
     st.session_state.fixture_int = db.DB_FIXTURE_INT[0]
