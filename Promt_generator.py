@@ -71,6 +71,7 @@ LIST_MATERIAL_PBR = list(KAMUS_PBR.keys())
 # ==========================================
 st.set_page_config(page_title="SmartBIM Engineex", layout="wide", initial_sidebar_state="expanded")
 
+
 # ==========================================
 # 1. KONFIGURASI KEAMANAN & API
 # ==========================================
@@ -80,6 +81,15 @@ def get_api_key():
     except Exception:
         return os.environ.get("GEMINI_API_KEY", os.environ.get("GOOGLE_API_KEY", ""))
 
+# ==========================================
+# 🛠️ PERBAIKAN PRIORITAS 1: API MANAGEMENT INEFFICIENCY
+# ==========================================
+# Gunakan @st.cache_resource agar koneksi ke API Gemini 
+# hanya dibuka SATU KALI per sesi, tidak berulang kali saat UI direfresh.
+@st.cache_resource
+def initialize_gemini_client(api_key):
+    return genai.Client(api_key=api_key)
+
 api_key_system = get_api_key()
 client = None
 
@@ -87,12 +97,14 @@ with st.sidebar:
     st.markdown("### 🔐 Status Mesin Render")
     if api_key_system:
         st.success("🔒 API Key Terdeteksi")
-        client = genai.Client(api_key=api_key_system)
+        # Panggil fungsi yang sudah di-cache
+        client = initialize_gemini_client(api_key_system)
     else:
         st.warning("⚠️ Mode Publik")
         api_key_input = st.text_input("🔑 Masukkan API Key Manual:", type="password")
         if api_key_input:
-            client = genai.Client(api_key=api_key_input)
+            # Panggil fungsi yang sudah di-cache
+            client = initialize_gemini_client(api_key_input)
             st.success("✅ Kunci Manual Terkoneksi!")
         else:
             st.error("🚨 Kunci Akses Diperlukan!")
