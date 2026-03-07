@@ -118,16 +118,17 @@ if 'init' not in st.session_state:
     # Inisialisasi status Checkbox (diperbaiki agar tidak duplikat)
     st.session_state.chk_color_masking = False
     
-    # Nilai Bawaan Material PBR (Inggris)
-    st.session_state.mask_red = KAMUS_PBR["Beton Kasar / Bekisting"]
-    st.session_state.mask_blue = KAMUS_PBR["Batu Andesit"]
-    st.session_state.mask_green = KAMUS_PBR["Cat Eksterior (Putih/Warna)"]
-    st.session_state.mask_yellow = KAMUS_PBR["Kayu Natural (Matte)"]
-    st.session_state.mask_purple = KAMUS_PBR["Kaca Jernih"]
-    st.session_state.mask_orange = KAMUS_PBR["Bata Merah Natural"]
-    st.session_state.mask_cyan = KAMUS_PBR["Baja Struktural (Brushed)"]
-    st.session_state.mask_magenta = KAMUS_PBR["Marmer Polished"]
-
+    with c1:
+                pbr_selector("⚪ Putih/Terang (Dinding/Wall)", "mask_white")
+                pbr_selector("🔘 Abu-Abu (Kolom/Beton)", "mask_gray")
+                pbr_selector("⚫ Abu Gelap/Hitam (Kusen/Atap)", "mask_dark")
+                pbr_selector("🟤 Coklat (Pintu/Kayu)", "mask_brown")
+            with c2:
+                pbr_selector("🧱 Merah Bata (Aksen Dinding)", "mask_brick")
+                pbr_selector("🩵 Biru Muda (Kaca Jendela)", "mask_blue")
+                pbr_selector("🟡 Krem/Kuning (Lantai/Keramik)", "mask_cream")
+                pbr_selector("🟢 Hijau/Bebas (Vegetasi/Lainnya)", "mask_green")
+    
 def handle_random():
     s = st.session_state
     s.tipe = random.choice(db.DB_TIPE)
