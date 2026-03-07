@@ -113,22 +113,59 @@ with st.sidebar:
 # ==========================================
 # 🛠️ PERBAIKAN PRIORITAS 4: MANAJEMEN STATE PERSISTEN
 # ==========================================
+import logging
+
+# Setup logging dasar untuk mencatat error ke console/server log
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 PRESET_FILE = "smartbim_presets.json"
 
 def load_custom_presets():
+    """
+    Memuat preset dengan arsitektur cloud-ready dan I/O error handling yang elegan.
+    Menghindari praktik "Broad Exception Masking".
+    """
     if os.path.exists(PRESET_FILE):
         try:
             with open(PRESET_FILE, "r") as f:
                 return json.load(f)
-        except Exception:
+        except json.JSONDecodeError as e:
+            logger.error(f"CRITICAL: File preset JSON rusak/corrupted. Detail: {e}")
+            st.error("🚨 Gagal memuat preset: Format file data preset rusak. Silakan periksa file JSON.")
             return {}
-    return {}
+        except IOError as e:
+            logger.error(f"CRITICAL: Kesalahan I/O saat membaca file preset. Detail: {e}")
+            st.error("🚨 Gagal memuat preset: Akses sistem berkas ditolak atau tidak terbaca.")
+            return {}
+        except Exception as e:
+            logger.error(f"CRITICAL: Kesalahan tak terduga saat memuat preset. Detail: {e}")
+            st.error("🚨 Kesalahan sistem yang tidak terduga saat memuat data profil.")
+            return {}
+            
+    return {} # Kembalikan kamus kosong jika file belum ada
 
 def save_custom_preset(name, data):
+    """
+    Menyimpan preset dengan proteksi penulisan dan peringatan UI.
+    Mengembalikan boolean True jika berhasil, False jika gagal.
+    """
     presets = load_custom_presets()
     presets[name] = data
-    with open(PRESET_FILE, "w") as f:
-        json.dump(presets, f, indent=4)
+    
+    try:
+        with open(PRESET_FILE, "w") as f:
+            json.dump(presets, f, indent=4)
+        logger.info(f"SUCCESS: Preset '{name}' berhasil diamankan ke penyimpanan.")
+        return True
+    except IOError as e:
+        logger.error(f"FAIL: Gagal menulis ke sistem berkas lokal. Detail: {e}")
+        st.error(f"⚠️ Gagal menyimpan preset '{name}': Lingkungan Cloud saat ini bersifat 'ephemeral' (sementara) dan memblokir penulisan data permanen. Konfigurasi ini akan hilang saat aplikasi di-refresh.")
+        return False
+    except Exception as e:
+        logger.error(f"FAIL: Kesalahan tak terduga saat menyimpan preset '{name}'. Detail: {e}")
+        st.error("⚠️ Terjadi kesalahan internal saat mencoba menyimpan profil Anda.")
+        return False
 # ==========================================
 # 2. INITIALIZE SESSION STATE (Memori Aplikasi)
 # ==========================================
@@ -287,7 +324,6 @@ with col_left:
                 if selected_preset != "Pilih Preset...": 
                     load_preset(selected_preset)
                     st.rerun()
-        
         with col_p2:
             new_preset_name = st.text_input("Nama Preset Baru:", placeholder="Misal: Villa Gaya Saya")
             if st.button("💾 Simpan Saat Ini", use_container_width=True) and new_preset_name:
@@ -302,15 +338,17 @@ with col_left:
                     "lensa_khusus": st.session_state.lensa_khusus, "kamera_film": st.session_state.kamera_film, "weathering": st.session_state.weathering
                 }
                 
-                # Simpan ke memori sesi
+                # Simpan ke memori sesi (selalu berhasil selama tab browser aktif)
                 st.session_state.custom_presets[new_preset_name] = new_data
                 
-                # 🛠️ Simpan permanen ke file JSON lokal
-                save_custom_preset(new_preset_name, new_data)
+                # Eksekusi fungsi simpan baru yang sudah aman
+                is_saved = save_custom_preset(new_preset_name, new_data)
                 
-                st.success(f"Preset '{new_preset_name}' disimpan secara permanen!")
-                st.rerun()
-        
+                # Tampilkan sukses HANYA jika operasi penyimpanan file berhasil
+                if is_saved:
+                    st.success(f"✅ Preset '{new_preset_name}' berhasil disimpan secara permanen!")
+                    st.rerun()
+               
     
     st.markdown("---")
     st.session_state.mode_render = st.radio(
