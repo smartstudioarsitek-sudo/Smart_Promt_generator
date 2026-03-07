@@ -478,35 +478,32 @@ with col_right:
                 else:
                     with st.spinner("Membangun kandang geometri (ControlNet) & Memproses Raytracing..."):
                         try:
-                            # 1. Daftarkan API Key ke environment agar terbaca oleh pustaka
+                            # 1. Daftarkan API Key ke environment
                             os.environ["REPLICATE_API_TOKEN"] = replicate_api_key
                             import replicate
                             
-                            # 2. Ambil file sketsa dari memori Streamlit dan kembalikan pointernya ke awal
+                            # 2. Ambil file sketsa dari memori Streamlit
                             uploaded_sketch_file.seek(0)
                             
-                            # 3. Panggil Model ControlNet Terpadu (Rossjillian) via Replicate
+                            # 3. Panggil Model FLUX.1 Canny (Kualitas Setara Imagen + Presisi Garis)
                             output = replicate.run(
-                                "rossjillian/controlnet:795433b19458d0f4fa172a7ccf93178d2adb1cb8ab2ad6c8fdc33fdbcd49f477",
+                                "black-forest-labs/flux-canny-dev",
                                 input={
-                                    "image": uploaded_sketch_file,
-                                    "prompt": st.session_state.generated_prompt + ", best quality, extremely detailed, architectural visualization, 8k resolution",
-                                    "structure": "hough", # hough adalah algoritma MLSD untuk mendeteksi garis lurus arsitektur
-                                    "negative_prompt": "longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, warped perspective, converging lines",
-                                    "num_outputs": 1,
-                                    "image_resolution": 512,
-                                    "steps": 20,
-                                    "scale": 9.0
+                                    "control_image": uploaded_sketch_file,
+                                    "prompt": st.session_state.generated_prompt + ", extremely photorealistic architectural rendering, highly detailed, V-Ray render, 8k resolution, professional architectural photography",
+                                    "output_format": "jpg",
+                                    "megapixels": "1", # FLUX mampu merender langsung di resolusi tinggi
+                                    "guidance": 30 # Tingkat kepatuhan estetika standar FLUX
                                 }
                             )
                             
                             # 4. Tampilkan Hasil
                             if output and len(output) > 0:
-                                # 🛠️ KUNCI PERBAIKAN: Tambahkan str() untuk mengubah FileOutput menjadi Teks URL
-                                final_image_url = str(output[0])
+                                # Mengubah FileOutput objek dari Replicate menjadi URL string
+                                final_image_url = str(output[0]) 
                                 
-                                st.success("✅ Geometri berhasil dikunci & Render Selesai!")
-                                st.image(final_image_url, caption="Render Final ControlNet (Presisi 99%)", use_column_width=True)
+                                st.success("✅ Geometri berhasil dikunci & Render FLUX Selesai!")
+                                st.image(final_image_url, caption="Render Final FLUX Canny (Presisi Absolut + Super Realistis)", use_column_width=True)
                                 
                                 st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
                             else:
@@ -515,7 +512,7 @@ with col_right:
                         except Exception as e:
                             st.error(f"Terjadi kesalahan pada server Replicate: {e}")
                             st.info("💡 Pastikan API Token Anda valid dan Anda memiliki saldo kredit di akun Replicate Anda.")
-                                                                            
+                                                                                                    
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
             
