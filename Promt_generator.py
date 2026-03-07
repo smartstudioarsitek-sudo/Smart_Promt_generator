@@ -184,19 +184,62 @@ if 'init' not in st.session_state:
     st.session_state.mask_cream = ""
     st.session_state.mask_green = ""
     
-    
-
+# ==========================================
+# 🛠️ PERBAIKAN PRIORITAS 4: OTAK ARSITEKTUR UNTUK RANDOMIZER
+# ==========================================
 def handle_random():
     s = st.session_state
+    
+    # 1. Tentukan Jangkar Utama: Perspektif & Waktu
+    s.view = random.choice(db.DB_VIEW)
+    is_interior = "[INT]" in s.view
+    
+    s.suasana = random.choice(db.DB_SUASANA)
+    is_night = any(k in s.suasana.lower() for k in ["night", "twilight", "sunset", "blue hour"])
+
+    # 2. Sesuaikan Cuaca Berdasarkan Waktu (Mencegah Oksimoron Langit)
+    if is_night:
+        s.cuaca = random.choice(db.DB_CUACA_MALAM)
+    else:
+        s.cuaca = random.choice(db.DB_CUACA_SIANG)
+
+    # 3. Sesuaikan Pencahayaan & Cegah Kegelapan Total
+    if is_interior:
+        s.fixture_int = random.choice(db.DB_FIXTURE_INT)
+        # Jika malam hari di dalam ruangan, pastikan lampu menyala
+        if is_night and "Tanpa" in s.fixture_int:
+            s.fixture_int = random.choice([f for f in db.DB_FIXTURE_INT if "Tanpa" not in f])
+    else:
+        s.fixture_ext = random.choice(db.DB_FIXTURE_EXT)
+        # Jika malam hari di luar ruangan, pastikan lampu fasad/taman menyala
+        if is_night and "Tanpa" in s.fixture_ext:
+            s.fixture_ext = random.choice([f for f in db.DB_FIXTURE_EXT if "Tanpa" not in f])
+
+    # 4. Logika Optik Lensa (Mencegah Oksimoron Skala)
+    if "Drone" in s.view:
+        # Paksa lensa ultra-wide khusus drone untuk bird's eye view
+        s.lensa_khusus = "Drone Hasselblad 24mm eq (Khusus Aerial/Bird Eye View)"
+    else:
+        # Hindari lensa drone untuk view level mata manusia, filter out Macro jika eksterior luas
+        opsi_lensa = [l for l in db.DB_LENSA_KHUSUS if "Drone" not in l]
+        if not is_interior and "Macro" in opsi_lensa:
+            opsi_lensa = [l for l in opsi_lensa if "Macro" not in l]
+        
+        # Cegah empty sequence error jika list kosong setelah filter
+        if opsi_lensa:
+            s.lensa_khusus = random.choice(opsi_lensa)
+        else:
+            s.lensa_khusus = db.DB_LENSA_KHUSUS[0] # Auto
+
+    # 5. Parameter Estetika & Lingkungan Bebas
     s.tipe = random.choice(db.DB_TIPE)
     s.gaya = random.choice(db.DB_GAYA)
     s.material = random.choice(db.DB_MATERIAL)
-    s.suasana = random.choice(db.DB_SUASANA)
-    s.view = random.choice(db.DB_VIEW)
     s.skenario = random.choice(db.DB_SKENARIO)
     s.engine = random.choice(db.DB_ENGINE)
     s.tapak = random.choice(db.DB_TAPAK)
     s.vegetasi = random.choice(db.DB_VEGETASI)
+    s.weathering = random.choice(db.DB_WEATHERING)    
 
 def load_preset(preset_name):
     all_presets = {**db.DB_PRESETS, **st.session_state.custom_presets}
