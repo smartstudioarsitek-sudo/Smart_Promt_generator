@@ -115,20 +115,19 @@ if 'init' not in st.session_state:
     st.session_state.storytelling_vibe = db.DB_STORYTELLING_VIBE[0]
     st.session_state.engine_video = db.DB_ENGINE_VIDEO[0]
     
-    # Inisialisasi status Checkbox (diperbaiki agar tidak duplikat)
+    # Inisialisasi status Checkbox 
     st.session_state.chk_color_masking = False
     
-            with c1:
-                pbr_selector("⚪ Putih/Terang (Dinding/Wall)", "mask_white")
-                pbr_selector("🔘 Abu-Abu (Kolom/Beton)", "mask_gray")
-                pbr_selector("⚫ Abu Gelap/Hitam (Kusen/Atap)", "mask_dark")
-                pbr_selector("🟤 Coklat (Pintu/Kayu)", "mask_brown")
-            with c2:
-                pbr_selector("🧱 Merah Bata (Aksen Dinding)", "mask_brick")
-                pbr_selector("🩵 Biru Muda (Kaca Jendela)", "mask_blue")
-                pbr_selector("🟡 Krem/Kuning (Lantai/Keramik)", "mask_cream")
-                pbr_selector("🟢 Hijau/Bebas (Vegetasi/Lainnya)", "mask_green")
-    
+    # Nilai Bawaan Material PBR (Mode Warna SketchUp Umum)
+    st.session_state.mask_white = KAMUS_PBR["Cat Eksterior (Putih/Warna)"]
+    st.session_state.mask_gray = KAMUS_PBR["Beton Ekspos Halus"]
+    st.session_state.mask_dark = KAMUS_PBR["Aluminium Anodized"]
+    st.session_state.mask_brown = KAMUS_PBR["Kayu Natural (Matte)"]
+    st.session_state.mask_brick = KAMUS_PBR["Bata Merah Natural"]
+    st.session_state.mask_blue = KAMUS_PBR["Kaca Jernih"]
+    st.session_state.mask_cream = KAMUS_PBR["Keramik Matte"]
+    st.session_state.mask_green = KAMUS_PBR["Batu Alam Palimanan"]
+
 def handle_random():
     s = st.session_state
     s.tipe = random.choice(db.DB_TIPE)
@@ -163,7 +162,7 @@ st.markdown("""
 
 col_head1, col_head2 = st.columns([8, 2])
 with col_head1:
-    st.markdown('<div class="header-box"><div style="display:flex; flex-direction:column;"><h1 class="title-text">SmartPromt Generator <span style="color:#4338ca">v2.1</span></h1><p class="subtitle-text">Enterprise Prompt Builder & Material ID Mapping</p></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-box"><div style="display:flex; flex-direction:column;"><h1 class="title-text">SmartBIM Engineex <span style="color:#4338ca">v2.1</span></h1><p class="subtitle-text">Enterprise Prompt Builder & Material ID Mapping</p></div></div>', unsafe_allow_html=True)
 with col_head2:
     st.write("") 
     if st.button("🔄 Acak Parameter", use_container_width=True):
@@ -226,7 +225,7 @@ with col_left:
             
         st.markdown("---")
         
-        # PERBAIKAN DUPLICATE WIDGET ID
+        # LOGIKA UI COLOR MASKING YANG BENAR
         use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
         st.session_state.use_color_masking = use_masking
 
@@ -261,7 +260,6 @@ with col_left:
                 pbr_selector("🩵 Biru Muda (Kaca Jendela)", "mask_blue")
                 pbr_selector("🟡 Krem/Kuning (Lantai/Keramik)", "mask_cream")
                 pbr_selector("🟢 Hijau/Bebas (Vegetasi/Lainnya)", "mask_green")
-        
                                 
         st.markdown("---")
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
