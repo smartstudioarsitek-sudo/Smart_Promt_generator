@@ -200,17 +200,40 @@ DB_AI_CONTROL = [
 ]
 DB_PRESETS = {
     "Cyberpunk Skyscraper (Malam)": {
-        "tipe": "Futuristic Skyscraper", "gaya": "Zaha Hadid Style", "material": "reflective glass facade",
+        "tipe": "Futuristic Skyscraper", "gaya": "Zaha Hadid Style", "material": "Fasad Kaca Reflektif (Reflective Glass Facade)",
         "suasana": "Cinematic Night Lighting", "cuaca": "Cinematic Cyberpunk Smog (Asap/Polusi Neon)",
         "view": "[EXT] Worm's Eye View (Low Angle)", "temp_warna": "RGB / Neon Accents (Cyberpunk, Futuristic)",
         "fixture_ext": "Architectural Facade Up-lighting", "teknik_cahaya": "Cinematic Volumetric Lighting (God Rays)",
         "tapak": "Dense Urban Infill (Perkotaan padat, diapit gedung lain)", "vegetasi": "None / Pure Hardscape (Tanpa tanaman, fokus pada material keras)",
-        "rasio": "Portrait / Story (9:16)", "presentasi": "Clean Photorealistic", # Pastikan ini sesuai dengan key DB_PRESENTASI yang baru
+        "rasio": "Portrait / Story (9:16)", "presentasi": "Clean Photorealistic",
         "skenario": "Standard Clear Architectural Shot", "engine": "Unreal Engine 5",
         "lensa_khusus": "14mm Ultra-Wide Rectilinear (Interior sempit terlihat megah)", "kamera_film": "Cinematic Anamorphic (Arri Alexa, flare lensa horizontal)",
         "weathering": "Subtle Weathering (Tanda pemakaian ringan, debu halus di sudut)"
+    },
+    "Tropical Brutalism Villa (Pagi)": {
+        "tipe": "Tropical Villa", "gaya": "Tropical Brutalism with Exposed Brick", "material": "Bata Terakota & Beton Mentah (Terracotta Brick & Raw Concrete)",
+        "suasana": "Soft Morning Ambient Light", "cuaca": "Morning Mist (Kabut Tipis Pagi)",
+        "view": "[EXT] Eye Level (Human View)", "temp_warna": "4000K Natural White (Bersih, Fokus, Modern)",
+        "fixture_ext": "Tanpa Lampu Spesifik (Natural Light)", "teknik_cahaya": "Soft Diffused Bounce Light",
+        "tapak": "Sloping Forest Terrain (Lereng bukit di dalam hutan)", "vegetasi": "Lush Tropical (Palem, Monstera, Pakis, rimbun hijau)",
+        "rasio": "Landscape (16:9)", "presentasi": "Clean Photorealistic",
+        "skenario": "Human Scale & Lifestyle: Featuring people on balcony", "engine": "Corona",
+        "lensa_khusus": "24mm Tilt-Shift Lens (Wajib untuk eksterior: Garis vertikal lurus tegap)", "kamera_film": "Medium Format (Hasselblad, depth of field sangat detail & mewah)",
+        "weathering": "Natural Patina & Aging (Oksidasi alami, lumut tipis di area lembap)"
+    },
+    "Nordic Minimalist Interior (Siang)": {
+        "tipe": "Modern Minimalist House", "gaya": "Scandinavian (Japandi)", "material": "Kayu Solid (Timber / Wood Panels)",
+        "suasana": "Overcast Soft Light", "cuaca": "Scattered Clouds (Berawan Sebagian)",
+        "view": "[INT] Wide Angle Interior", "temp_warna": "3000K Soft White (Nyaman, Elegan)",
+        "fixture_int": "Minimalist Linear LED Suspended Lights", "teknik_cahaya": "Standard Global Illumination",
+        "tapak": "Suburban Neighborhood (Perumahan asri, jalan aspal)", "vegetasi": "Zen Japanese Garden (Bonsai, Maple, Bambu, kerikil putih)",
+        "rasio": "Classic Photo (4:3)", "presentasi": "Clean Photorealistic",
+        "skenario": "Quiet Morning Routine (Burung beterbangan lambat, angin sepoi-sepoi menggerakkan daun, nuansa damai)", "engine": "V-Ray",
+        "lensa_khusus": "Auto (Sesuaikan otomatis dengan View)", "kamera_film": "Digital Crisp (Sony A7R IV, tajam, modern, bersih)",
+        "weathering": "Pristine & Brand New (Sangat Bersih/Baru)"
     }
 }
+
 
 # === KAMUS TERJEMAHAN MATERIAL PBR (INDONESIA -> ENGLISH PBR LOGIC) ===
 KAMUS_PBR = {
