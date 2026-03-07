@@ -429,7 +429,6 @@ with col_right:
             
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
-            
     with tab_inpaint:
         st.markdown("### 🖌️ Kanvas Revisi (Inpainting)")
         st.info("Unggah gambar hasil render final Anda (dari Gemini/Midjourney/API), lalu 'lukis' area yang ingin direvisi.")
@@ -444,16 +443,27 @@ with col_right:
                     # 1. Buka gambar mentah
                     temp_img = Image.open(base_img_file).convert("RGB")
                     
-                    # 2. Skala ukuran gambar
-                    max_width = 600
-                    if temp_img.width > max_width:
-                        ratio = max_width / temp_img.width
+                    # ==========================================
+                    # 🛠️ PERBAIKAN PRIORITAS 1: CEGAH OOM LEAK
+                    # ==========================================
+                    # Batasi resolusi maksimum ke 2048px sebelum pemrosesan matriks apa pun.
+                    # Metode thumbnail() akan mempertahankan rasio aspek secara proporsional.
+                    MAX_SAFE_SIZE = (2048, 2048)
+                    temp_img.thumbnail(MAX_SAFE_SIZE, Image.Resampling.LANCZOS)
+                    
+                    # 2. Skala ukuran gambar khusus untuk tampilan Kanvas UI Streamlit
+                    max_width_ui = 600
+                    if temp_img.width > max_width_ui:
+                        ratio = max_width_ui / temp_img.width
                         new_height = int(temp_img.height * ratio)
-                        temp_img = temp_img.resize((max_width, new_height))
+                        # Gunakan variabel berbeda untuk UI agar resolusi tinggi tetap aman untuk API
+                        ui_img = temp_img.resize((max_width_ui, new_height), Image.Resampling.LANCZOS)
+                    else:
+                        ui_img = temp_img.copy()
                     
                     # 3. "CUCI" GAMBAR: Paksa simpan sebagai PNG di memori agar browser tidak rewel
                     clean_io = io.BytesIO()
-                    temp_img.save(clean_io, format="PNG")
+                    ui_img.save(clean_io, format="PNG")
                     clean_io.seek(0)
                     
                     # 4. Buka kembali gambar yang sudah suci menjadi PNG untuk masuk ke kanvas
@@ -489,6 +499,7 @@ with col_right:
                             if micro_prompt:
                                 with st.spinner("Mengirim masker dan instruksi ke Google AI (Inpainting)..."):
                                     try:
+                                        # Buat Mask Image dari Kanvas
                                         mask_array = np.zeros((base_image_resized.height, base_image_resized.width), dtype=np.uint8)
                                         mask_array[canvas_result.image_data[:, :, 3] > 0] = 255
                                         mask_image = Image.fromarray(mask_array, mode="L")
@@ -506,6 +517,8 @@ with col_right:
                                                 edit_mode="INPAINTING_INSERT" 
                                             )
                                         )
+    
+    
                                         
                                         st.success("✅ Revisi Selesai! (Aturan 'The One Edit Rule' berhasil diterapkan)")
                                         
