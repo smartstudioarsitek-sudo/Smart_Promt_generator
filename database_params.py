@@ -53,7 +53,18 @@ DB_VIEW = [
     "[EXT] Eye Level (Human View)", "[EXT] Drone / Bird's Eye View", "[EXT] Worm's Eye View (Low Angle)",
     "[INT] Eye Level (Human View)", "[INT] Wide Angle Interior", "[INT] Close-up Detail Shot"
 ]
-
+# Sistem Metadata (Flagging) untuk menggantikan deteksi hardcode "[INT]"
+DB_VIEW_FLAGS = {
+    "[EXT] Eye Level (Human View)": {"is_interior": False},
+    "[EXT] Drone / Bird's Eye View": {"is_interior": False},
+    "[EXT] Worm's Eye View (Low Angle)": {"is_interior": False},
+    "[INT] Eye Level (Human View)": {"is_interior": True},
+    "[INT] Wide Angle Interior": {"is_interior": True},
+    "[INT] Close-up Detail Shot": {"is_interior": True}
+}
+# Info: Jika nanti Anda ingin menghapus tulisan "[INT]" dan mengubahnya menjadi 
+# "Tampilan Dalam Ruangan", Anda cukup mengubah teks di DB_VIEW dan key di kamus ini, 
+# sistem tidak akan pernah rusak lagi.
 DB_TEMP_WARNA = [
     "Auto (Berdasarkan Waktu/Suasana)",
     "2700K Warm White (Hangat, Intim, Mewah)",
