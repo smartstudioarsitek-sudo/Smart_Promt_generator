@@ -231,14 +231,19 @@ col_left, col_right = st.columns([6, 6], gap="large")
 
 with col_left:
     with st.expander("📂 Preset Manager (Load & Save)", expanded=False):
-        preset_options = list(db.DB_PRESETS.keys()) + list(st.session_state.custom_presets.keys())
+
+        # Tempatkan placeholder UI secara eksklusif di lapisan antarmuka
+        preset_options = ["Pilih Preset..."] + list(db.DB_PRESETS.keys()) + list(st.session_state.custom_presets.keys())
         selected_preset = st.selectbox("Pilih Profil Pengaturan:", preset_options)
         
         col_p1, col_p2 = st.columns(2)
         with col_p1:
             if st.button("📥 Muat Preset", use_container_width=True):
-                load_preset(selected_preset)
-                st.rerun()
+                # Validasi agar aplikasi tidak mencoba memuat placeholder
+                if selected_preset != "Pilih Preset...": 
+                    load_preset(selected_preset)
+                    st.rerun()
+        
         with col_p2:
             new_preset_name = st.text_input("Nama Preset Baru:", placeholder="Misal: Villa Gaya Saya")
             if st.button("💾 Simpan Saat Ini", use_container_width=True) and new_preset_name:
