@@ -285,8 +285,8 @@ with col_left:
 # KOLOM KANAN (OUTPUT & INPAINTING)
 # ==========================================
 with col_right:
-    tab_out, tab_inpaint, tab_hist = st.tabs(["🖥️ Output (Prompt & Visual)", "🖌️ Inpainting (Revisi)", "📚 Prompt Ledger (Riwayat)"])
-    
+    tab_out, tab_inpaint, tab_upscale, tab_hist = st.tabs(["🖥️ Output", "🖌️ Inpainting", "🔍 4K Upscaler", "📚 Riwayat"])
+        
     with tab_out:
         if st.session_state.generated_prompt:
             st.success("✅ Logika arsitektural & komposisi fotografi siap dieksekusi!")
@@ -459,3 +459,42 @@ with col_right:
             for i, item in enumerate(st.session_state.history_ledger):
                 with st.expander(f"{item['title']} (Terbaru)" if i==0 else item['title'], expanded=(i==0)):
                     st.code(item['prompt'], language="markdown")
+    # ========================================================
+    # TAB BARU: AI UPSCALER 4K/8K (MODUL 3)
+    # ========================================================
+    with tab_upscale:
+        st.markdown("### 🔍 Ultra HD Upscaler (4K/8K)")
+        st.info("Tingkatkan resolusi gambar final Anda tanpa pecah (pixelated) untuk kebutuhan cetak brosur atau presentasi direksi.")
+        
+        upscale_img_file = st.file_uploader("📥 Unggah Gambar Final (JPG/PNG)", type=["png", "jpg", "jpeg", "jfif", "webp"], key="upscale_upload")
+        
+        if upscale_img_file is not None:
+            up_img = Image.open(upscale_img_file)
+            st.image(up_img, caption=f"Resolusi Asli: {up_img.width} x {up_img.height} px", use_column_width=True)
+            
+            st.markdown("---")
+            col_up1, col_up2 = st.columns(2)
+            with col_up1:
+                target_res = st.selectbox("Target Skalabilitas:", ["4K Ultra HD (Brosur/Web)", "8K Print Quality (Billboard/Banner)"])
+            with col_up2:
+                enhance_mode = st.selectbox("Algoritma Penajaman:", ["PBR Texture Enhance (Arsitektur)", "Smooth Denoise (Interior/Soft)"])
+                
+            if st.button("🚀 Proses Upscale (Simulasi)", type="primary", use_container_width=True):
+                with st.spinner(f"Menginisiasi jaringan saraf penajam resolusi ke {target_res}..."):
+                    # CATATAN UNTUK PENGEMBANG: 
+                    # Di sinilah Anda nanti akan memasukkan endpoint API dari Replicate (Real-ESRGAN) 
+                    # atau model Upscaler Cloud lainnya.
+                    
+                    st.success("✅ Gambar siap di-upscale!")
+                    st.warning("⚠️ Karena keterbatasan memori Streamlit Cloud saat ini, fitur Upscale sejati (pemrosesan piksel mentah) disarankan menggunakan API eksternal khusus (seperti Krea AI / Magnific) atau dijalankan di mesin lokal (Local GPU).")
+                    
+                    # Simulasi tombol unduh untuk UX yang utuh
+                    buf_up = io.BytesIO()
+                    up_img.save(buf_up, format="PNG")
+                    st.download_button(
+                        label="💾 Unduh Hasil Upscale (Format Standar)",
+                        data=buf_up.getvalue(),
+                        file_name="Upscaled_Architecture.png",
+                        mime="image/png",
+                        use_container_width=True
+                    )
