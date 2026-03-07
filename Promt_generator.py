@@ -20,33 +20,56 @@ except ImportError:
     HAS_CANVAS = False
 
 # ==========================================
-# 0. KAMUS PINTAR PBR (INDONESIA -> ENGLISH)
+# 0. KAMUS PINTAR PBR (VERSI LENGKAP DARI DATABASE)
 # ==========================================
 KAMUS_PBR = {
+    # --- Beton ---
     "Beton Ekspos Halus": "Smooth architectural concrete, low roughness, soft specular reflection",
     "Beton Kasar / Bekisting": "Raw architectural concrete, high roughness, micro-displacement map, visible formwork tie-holes",
     "Beton Pracetak (Precast)": "Precast concrete panels, uniform texture, subtle edge chamfers, clean joints",
+    
+    # --- Kaca ---
     "Kaca Jernih": "Clear Architectural Glass, IOR 1.52, dielectric transmission, sharp specular",
     "Kaca Buram (Frosted)": "Frosted architectural glass, high roughness, IOR 1.45, blurred dielectric transmission",
     "Kaca Reflektif (Cermin)": "Highly reflective mirror glass, metallic workflow, sharp environmental reflections, IOR 2.0",
+    "Kaca Berwarna (Tinted)": "Tinted architectural glass, subtle color absorption, dielectric transmission, IOR 1.52",
+    
+    # --- Kayu ---
     "Kayu Solid (Glossy)": "Polished solid timber, clear coat specular, visible wood grain normal map",
     "Kayu Natural (Matte)": "Natural raw wood timber, high roughness, diffuse scattering, prominent grain displacement",
+    "Kayu Ulin / Eksterior": "Weathered ironwood, desaturated albedo, deep cracks normal map, matte finish",
+    
+    # --- Pasangan Bata & Batu ---
     "Bata Merah Natural": "Terracotta brickwork, matte albedo, pronounced bump map on mortar joints",
     "Bata Putih / Expose": "Painted white brickwork, subtle mortar depth, diffuse reflection, low specular",
     "Batu Andesit": "Rough Andesite Stone, natural displacement map, high frequency micro-bump, porous surface",
+    "Batu Alam Palimanan": "Palimanan sandstone, warm albedo, high roughness, natural stratification bump map",
+    
+    # --- Logam (Metal) ---
     "Baja Struktural (Brushed)": "Brushed structural steel, metallic workflow, low albedo, anisotropic reflections, micro-scratches",
     "Aluminium Anodized": "Anodized aluminum frame, semi-rough metallic, uniform scatter, subtle edge highlights",
+    "Baja Karat (Corten)": "Weathered Corten steel, deep orange-brown rust albedo, high roughness, patchy displacement",
+    "Tembaga / Perunggu": "Patinated bronze/copper, metallic workflow, subtle green oxidation, variable roughness",
+    
+    # --- Pelapis Permukaan (Finishing) ---
     "Cat Eksterior (Putih/Warna)": "Clean exterior stucco paint, subtle noise texture, matte finish, soft global illumination scattering",
     "Marmer Polished": "Polished Marble, highly reflective, subtle clear coat specular, natural veining albedo",
+    "Granit Flamed": "Flamed Granite paving, high roughness, crystalline micro-bump, diffuse scattering",
     "Keramik Matte": "Matte ceramic tiles, subtle grout lines, low specular, uniform albedo",
+    "Keramik Glossy": "Glossy ceramic tiles, high specular, sharp reflections, clean grout normal map",
+    
+    # --- Lainnya ---
+    "Aspal Jalan": "Rough asphalt road surface, high frequency noise displacement, low albedo, subtle specular on wet patches",
+    "Rumput Sintetis": "Artificial turf grass, subsurface scattering, individual blade normal map, matte albedo",
     "Kustom (Ketik Manual)": "" # Opsi fleksibel
 }
+
 LIST_MATERIAL_PBR = list(KAMUS_PBR.keys())
 
 # ==========================================
 # 0. KONFIGURASI HALAMAN (WAJIB PALING ATAS)
 # ==========================================
-st.set_page_config(page_title="SmartPromt Generator v2.1", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="SmartBIM Engineex", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
 # 1. KONFIGURASI KEAMANAN & API
@@ -225,7 +248,6 @@ with col_left:
             
         st.markdown("---")
         
-        # LOGIKA UI COLOR MASKING YANG BENAR
         use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
         st.session_state.use_color_masking = use_masking
 
