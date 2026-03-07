@@ -221,64 +221,64 @@ if 'init' not in st.session_state:
     st.session_state.mask_blue = ""
     st.session_state.mask_cream = ""
     st.session_state.mask_green = ""
-    
 # ==========================================
-# 🛠️ PERBAIKAN PRIORITAS 4: OTAK ARSITEKTUR UNTUK RANDOMIZER
+# 🛠️ PERBAIKAN PRIORITAS 4 & BUG INDEXERROR: OTAK ARSITEKTUR TANGGUH
 # ==========================================
+def safe_random_choice(options_list, fallback_value):
+    """Safeguard untuk mencegah IndexError jika list kosong akibat filter agresif."""
+    return random.choice(options_list) if options_list else fallback_value
+
 def handle_random():
     s = st.session_state
     
     # 1. Tentukan Jangkar Utama: Perspektif & Waktu
-    s.view = random.choice(db.DB_VIEW)
-    is_interior = "[INT]" in s.view
+    s.view = safe_random_choice(db.DB_VIEW, db.DB_VIEW[0])
     
-    s.suasana = random.choice(db.DB_SUASANA)
+    # 🛠️ PENGHAPUSAN HARDCODING [INT]: Gunakan Metadata Database dengan Fallback cerdas
+    meta_flag = getattr(db, 'DB_VIEW_FLAGS', {}).get(s.view, {})
+    is_interior = meta_flag.get("is_interior", "interior" in s.view.lower() or "[int]" in s.view.lower())
+    
+    s.suasana = safe_random_choice(db.DB_SUASANA, db.DB_SUASANA[0])
     is_night = any(k in s.suasana.lower() for k in ["night", "twilight", "sunset", "blue hour"])
 
     # 2. Sesuaikan Cuaca Berdasarkan Waktu (Mencegah Oksimoron Langit)
     if is_night:
-        s.cuaca = random.choice(db.DB_CUACA_MALAM)
+        s.cuaca = safe_random_choice(db.DB_CUACA_MALAM, db.DB_CUACA_MALAM[0])
     else:
-        s.cuaca = random.choice(db.DB_CUACA_SIANG)
+        s.cuaca = safe_random_choice(db.DB_CUACA_SIANG, db.DB_CUACA_SIANG[0])
 
     # 3. Sesuaikan Pencahayaan & Cegah Kegelapan Total
     if is_interior:
-        s.fixture_int = random.choice(db.DB_FIXTURE_INT)
-        # Jika malam hari di dalam ruangan, pastikan lampu menyala
+        s.fixture_int = safe_random_choice(db.DB_FIXTURE_INT, db.DB_FIXTURE_INT[0])
         if is_night and "Tanpa" in s.fixture_int:
-            s.fixture_int = random.choice([f for f in db.DB_FIXTURE_INT if "Tanpa" not in f])
+            opsi_lampu = [f for f in db.DB_FIXTURE_INT if "Tanpa" not in f]
+            s.fixture_int = safe_random_choice(opsi_lampu, db.DB_FIXTURE_INT[1]) # Gunakan fallback lampu menyala
     else:
-        s.fixture_ext = random.choice(db.DB_FIXTURE_EXT)
-        # Jika malam hari di luar ruangan, pastikan lampu fasad/taman menyala
+        s.fixture_ext = safe_random_choice(db.DB_FIXTURE_EXT, db.DB_FIXTURE_EXT[0])
         if is_night and "Tanpa" in s.fixture_ext:
-            s.fixture_ext = random.choice([f for f in db.DB_FIXTURE_EXT if "Tanpa" not in f])
+            opsi_lampu = [f for f in db.DB_FIXTURE_EXT if "Tanpa" not in f]
+            s.fixture_ext = safe_random_choice(opsi_lampu, db.DB_FIXTURE_EXT[1])
 
-    # 4. Logika Optik Lensa (Mencegah Oksimoron Skala)
-    if "Drone" in s.view:
-        # Paksa lensa ultra-wide khusus drone untuk bird's eye view
+    # 4. Logika Optik Lensa (Dilindungi dari IndexError)
+    if "Drone" in s.view or "Aerial" in s.view:
         s.lensa_khusus = "Drone Hasselblad 24mm eq (Khusus Aerial/Bird Eye View)"
     else:
-        # Hindari lensa drone untuk view level mata manusia, filter out Macro jika eksterior luas
         opsi_lensa = [l for l in db.DB_LENSA_KHUSUS if "Drone" not in l]
-        if not is_interior and "Macro" in opsi_lensa:
+        if not is_interior:
             opsi_lensa = [l for l in opsi_lensa if "Macro" not in l]
-        
-        # Cegah empty sequence error jika list kosong setelah filter
-        if opsi_lensa:
-            s.lensa_khusus = random.choice(opsi_lensa)
-        else:
-            s.lensa_khusus = db.DB_LENSA_KHUSUS[0] # Auto
+        # Jika opsi_lensa kosong setelah difilter, otomatis kembali ke default (Lensa Auto)
+        s.lensa_khusus = safe_random_choice(opsi_lensa, db.DB_LENSA_KHUSUS[0])
 
     # 5. Parameter Estetika & Lingkungan Bebas
-    s.tipe = random.choice(db.DB_TIPE)
-    s.gaya = random.choice(db.DB_GAYA)
-    s.material = random.choice(db.DB_MATERIAL)
-    s.skenario = random.choice(db.DB_SKENARIO)
-    s.engine = random.choice(db.DB_ENGINE)
-    s.tapak = random.choice(db.DB_TAPAK)
-    s.vegetasi = random.choice(db.DB_VEGETASI)
-    s.weathering = random.choice(db.DB_WEATHERING)    
-
+    s.tipe = safe_random_choice(db.DB_TIPE, db.DB_TIPE[0])
+    s.gaya = safe_random_choice(db.DB_GAYA, db.DB_GAYA[0])
+    s.material = safe_random_choice(db.DB_MATERIAL, db.DB_MATERIAL[0])
+    s.skenario = safe_random_choice(db.DB_SKENARIO, db.DB_SKENARIO[0])
+    s.engine = safe_random_choice(db.DB_ENGINE, db.DB_ENGINE[0])
+    s.tapak = safe_random_choice(db.DB_TAPAK, db.DB_TAPAK[0])
+    s.vegetasi = safe_random_choice(db.DB_VEGETASI, db.DB_VEGETASI[0])
+    s.weathering = safe_random_choice(db.DB_WEATHERING, db.DB_WEATHERING[0])    
+ 
 def load_preset(preset_name):
     all_presets = {**db.DB_PRESETS, **st.session_state.custom_presets}
     data = all_presets.get(preset_name)
@@ -423,7 +423,8 @@ with col_left:
 
     with tab2:
         st.session_state.temp_warna = st.selectbox("Suhu Warna Lampu (Kelvin)", db.DB_TEMP_WARNA, index=db.DB_TEMP_WARNA.index(st.session_state.temp_warna))
-        is_interior_ui = "[INT]" in st.session_state.view
+        meta_flag = getattr(db, 'DB_VIEW_FLAGS', {}).get(st.session_state.view, {})
+        is_interior_ui = meta_flag.get("is_interior", "interior" in st.session_state.view.lower() or "[int]" in st.session_state.view.lower())
         if is_interior_ui:
             st.session_state.fixture_int = st.selectbox("Interior Lighting Fixtures", db.DB_FIXTURE_INT, index=db.DB_FIXTURE_INT.index(st.session_state.fixture_int))
         else:
