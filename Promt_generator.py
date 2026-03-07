@@ -485,28 +485,26 @@ with col_right:
                             # 2. Ambil file sketsa dari memori Streamlit
                             uploaded_sketch_file.seek(0)
                             
-                            # 3. Panggil Mesin SDXL ControlNet (Kualitas Fotorealistik Tinggi Khusus Arsitektur)
+                            # 3. Panggil Mesin SDXL Image-to-Image (Bukan ControlNet)
+                            # Mode ini SANGAT COCOK untuk input gambar SketchUp berwarna/berbayang
                             output = replicate.run(
-                                "lucataco/sdxl-controlnet:06d6fae3b75ab68a28cd2900afa6033166910dd09fd9751047043a5bbb4c184b",
+                                "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
                                 input={
                                     "image": uploaded_sketch_file,
-                                    "prompt": st.session_state.generated_prompt + ", ultra photorealistic architectural photography, architectural digest, V-Ray render, Unreal Engine 5, 8k resolution, highly detailed, realistic lighting",
-                                    "negative_prompt": "low quality, bad quality, sketches, cartoon, 3d render, flat shading, UI, interface, text, watermark, plastic, dull, sketchup, false colors",
-                                    "num_inference_steps": 40,
-                                    "condition_scale": 0.5  # 🛠️ KUNCI UTAMA: AI mempertahankan struktur, tapi menghancurkan tekstur kartun asli SketchUp.
+                                    "prompt": st.session_state.generated_prompt + ", ultra photorealistic, V-Ray render, Unreal Engine 5, 8k resolution, architectural photography, highly detailed, realistic materials",
+                                    "negative_prompt": "cartoon, sketch, 3d render, dull, flat, low quality, sketchup, false colors, watermark",
+                                    "prompt_strength": 0.65, # 🛠️ KUNCI UTAMA: 65% Imajinasi AI (Fotorealistik), 35% Mempertahankan bentuk SketchUp Kakak
+                                    "num_inference_steps": 40
                                 }
                             )
                             
-                            # 4. Tampilkan Hasil (Kebal Error List/Objek Tunggal)
+                            # 4. Tampilkan Hasil
                             if output:
-                                # Jika Replicate membalas dengan List, ambil yang terakhir. Jika membalas dengan Objek Tunggal, langsung jadikan Teks URL.
-                                if isinstance(output, list):
-                                    final_image_url = str(output[-1]) 
-                                else:
-                                    final_image_url = str(output)
+                                # SDXL mengembalikan list URL
+                                final_image_url = str(output[0]) if isinstance(output, list) else str(output)
                                 
-                                st.success("✅ Geometri terkunci & Render SDXL Super Realistis Selesai!")
-                                st.image(final_image_url, caption="Render Final SDXL ControlNet (Setara Imagen)", use_column_width=True)
+                                st.success("✅ Render SDXL Image-to-Image Selesai!")
+                                st.image(final_image_url, caption="Render Final SDXL (Kualitas Setara Imagen 4)", use_column_width=True)
                                 
                                 st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
                             else:
@@ -514,8 +512,7 @@ with col_right:
                                 
                         except Exception as e:
                             st.error(f"Terjadi kesalahan pada server Replicate: {e}")
-                            st.info("💡 Pastikan API Token Anda valid dan Anda memiliki saldo kredit di akun Replicate Anda.")
-                                                                                                                                                    
+                                                                                                                                                                            
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
             
