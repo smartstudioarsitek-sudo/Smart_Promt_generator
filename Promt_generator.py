@@ -493,14 +493,17 @@ with col_right:
                                     "prompt": st.session_state.generated_prompt + ", ultra photorealistic architectural photography, architectural digest, V-Ray render, Unreal Engine 5, 8k resolution, highly detailed, realistic lighting",
                                     "negative_prompt": "low quality, bad quality, sketches, cartoon, 3d render, flat shading, UI, interface, text, watermark, plastic, dull, sketchup, false colors",
                                     "num_inference_steps": 40,
-                                    "condition_scale": 0.5  # 🛠️ KUNCI UTAMA: Di angka 0.5, AI akan mempertahankan struktur jendela/pilar, tapi MENGHANCURKAN tekstur kartun asli SketchUp dan menimpanya dengan material nyata.
+                                    "condition_scale": 0.5  # 🛠️ KUNCI UTAMA: AI mempertahankan struktur, tapi menghancurkan tekstur kartun asli SketchUp.
                                 }
                             )
                             
-                            # 4. Tampilkan Hasil
-                            if output and len(output) > 0:
-                                # Model ini mengembalikan gambar final di posisi terakhir array
-                                final_image_url = str(output[-1]) 
+                            # 4. Tampilkan Hasil (Kebal Error List/Objek Tunggal)
+                            if output:
+                                # Jika Replicate membalas dengan List, ambil yang terakhir. Jika membalas dengan Objek Tunggal, langsung jadikan Teks URL.
+                                if isinstance(output, list):
+                                    final_image_url = str(output[-1]) 
+                                else:
+                                    final_image_url = str(output)
                                 
                                 st.success("✅ Geometri terkunci & Render SDXL Super Realistis Selesai!")
                                 st.image(final_image_url, caption="Render Final SDXL ControlNet (Setara Imagen)", use_column_width=True)
@@ -512,7 +515,7 @@ with col_right:
                         except Exception as e:
                             st.error(f"Terjadi kesalahan pada server Replicate: {e}")
                             st.info("💡 Pastikan API Token Anda valid dan Anda memiliki saldo kredit di akun Replicate Anda.")
-                                                                                                                            
+                                                                                                                                                    
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
             
