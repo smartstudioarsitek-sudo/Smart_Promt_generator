@@ -22,16 +22,19 @@ def enhance_with_pbr(material_string):
         "batu": "natural stone cladding with deep displacement and distinct mortar joints"
     }
     
-    enhanced = material_string.lower()
+    # 🛠️ PERBAIKAN PRIORITAS 3 & CASE SENSITIVITY
+    # Biarkan string asli utuh, jangan di-.lower() agar merek komersial (Zaha Hadid, Kodak, Alucobond) tidak rusak.
+    enhanced = material_string 
     
-    # 🛠️ PERBAIKAN PRIORITAS 3: String Manipulation Bug
     # Mengurutkan dari kata terpanjang ke terpendek agar "batu" tidak merusak "batu bata"
     sorted_keys = sorted(pbr_dictionary.keys(), key=len, reverse=True)
     
     for key in sorted_keys:
-        # Gunakan regex \b (word boundary) agar hanya kata yang utuh yang diganti
-        pattern = r'\b' + re.escape(key) + r'\b'
-        enhanced = re.sub(pattern, pbr_dictionary[key], enhanced)
+        # Gunakan regex \b (word boundary) dipadukan dengan re.IGNORECASE
+        # Dengan ini, sistem bisa mendeteksi kata "Kayu", "KAYU", atau "kayu" 
+        # TANPA harus mengubah sisa kalimat menjadi huruf kecil semua.
+        pattern = re.compile(r'\b' + re.escape(key) + r'\b', re.IGNORECASE)
+        enhanced = pattern.sub(pbr_dictionary[key], enhanced)
         
     return enhanced
 
