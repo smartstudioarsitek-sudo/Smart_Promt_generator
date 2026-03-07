@@ -315,14 +315,16 @@ with col_left:
     
     with tab1:
         st.markdown('<div class="section-title">📐 Geometry & Sketch Upload</div>', unsafe_allow_html=True)
-        uploaded_sketch_file = st.file_uploader("Upload Sketsa Garis / Base Image", type=None, key="sketch_up")
+        
+        # --- TIMPA MULAI DARI SINI ---
+        uploaded_sketch_file = st.file_uploader("1️⃣ Upload Geometri (Z-Depth / Hidden Line)", type=["png", "jpg"], key="sketch_up")
         
         if uploaded_sketch_file is not None:
             try:
                 sketch_img = Image.open(uploaded_sketch_file)
-                st.image(sketch_img, caption="Preview Sketsa Aktual", use_column_width=True) 
+                st.image(sketch_img, caption="Preview Geometri Struktural", use_column_width=True) 
                 st.session_state.uploaded_sketch = True
-                st.success("✅ Sketsa terdeteksi! 'Vision Constraint' akan diaktifkan.")
+                st.success("✅ Geometri terdeteksi! 'Vision Constraint' aktif.")
                 st.session_state.ai_control = st.selectbox("Metode Restriksi Struktural AI (Lapisan 2):", db.DB_AI_CONTROL, index=db.DB_AI_CONTROL.index(st.session_state.ai_control)) 
             except Exception:
                 st.error("❌ File yang diunggah bukan gambar yang valid.")
@@ -334,8 +336,23 @@ with col_left:
         use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
         st.session_state.use_color_masking = use_masking
 
+        # Inisialisasi variabel kosong agar tidak error jika checkbox dimatikan
+        uploaded_mask_file = None 
+
         if st.session_state.use_color_masking:
+            # Kolom upload ke-2 muncul jika checkbox diaktifkan
+            uploaded_mask_file = st.file_uploader("2️⃣ Upload Semantic Color Mask (Warna Material)", type=["png", "jpg"], key="mask_up")
+            
+            if uploaded_mask_file is not None:
+                try:
+                    mask_img = Image.open(uploaded_mask_file)
+                    st.image(mask_img, caption="Preview Semantic Masking", use_column_width=True)
+                except Exception:
+                    st.error("❌ File mask bukan gambar yang valid.")
+
             st.info("💡 Pilih material dalam bahasa Indonesia. Aplikasi akan otomatis merakit mantra 3D/PBR bahasa Inggris ke dalam prompt.")
+            # --- TIMPA BERAKHIR SAMPAI DI SINI (Lanjutkan ke c1, c2 kolom material) ---
+                       
             c1, c2 = st.columns(2)
             
             def pbr_selector(label, key_state):
@@ -476,42 +493,69 @@ with col_right:
                 elif not st.session_state.uploaded_sketch:
                     st.warning("⚠️ Sketsa belum diunggah! ControlNet membutuhkan gambar dasar (sketsa CAD/BIM) di Tab 'Geometri & Material' untuk menjiplak garis.")
                 else:
-                    with st.spinner("Membangun kandang geometri (ControlNet) & Memproses Raytracing..."):
+                    with st.spinner("Memulai Orkestrasi Multi-ControlNet (Depth + Segmentation)..."):
                         try:
                             # 1. Daftarkan API Key ke environment
                             os.environ["REPLICATE_API_TOKEN"] = replicate_api_key
                             import replicate
                             
-                            # 2. Ambil file sketsa dari memori Streamlit
+                            # 2. Reset pointer file Streamlit agar bisa dibaca API
                             uploaded_sketch_file.seek(0)
                             
-                            # 3. Panggil Mesin FLUX.1 Canny (Raja Fotorealisme Saat Ini)
-                            output = replicate.run(
-                                "black-forest-labs/flux-canny-dev",
-                                input={
-                                    "control_image": uploaded_sketch_file,
-                                    "prompt": st.session_state.generated_prompt + ", hyper-realistic architectural photography, extremely detailed, V-Ray render, Unreal Engine 5, 8k resolution, cinematic lighting, lush environment, photorealistic",
-                                    "output_format": "jpg",
-                                    "megapixels": "1",
-                                    "steps": 30,             # Biarkan AI memasak tekstur lebih lama
-                                    "guidance": 3.5,         # 🛠️ KUNCI 1: Harus 3.5! Ini adalah tombol pengaktif "Otak Fotorealistik" FLUX.
-                                    "control_weight": 0.55   # 🛠️ KUNCI 2: Kita setel ke 55% saja! AI akan mempertahankan bentuk bangunan Kakak, tapi berani MENGHAPUS garis hitam/warna kartun SketchUp dan menimpanya dengan aspal & material asli!
-                                }
-                            )
+                            # 3. Eksekusi API Berdasarkan Ketersediaan Masking
+                            if st.session_state.use_color_masking and 'uploaded_mask_file' in locals() and uploaded_mask_file is not None:
+                                uploaded_mask_file.seek(0)
+                                
+                                # Menggunakan endpoint SDXL Multi-ControlNet (fofr)
+                                output = replicate.run(
+                                    "fofr/sdxl-multi-controlnet:382b6826640cdd3fcba5a5960098df4478345c2f3ccf8c3caee547432d56a7bc",
+                                    input={
+                                        "prompt": st.session_state.generated_prompt + ", award-winning architectural photography, hyper-realistic, 8k, V-Ray render",
+                                        "negative_prompt": "3d render, sketchup, lumion, cartoon, flat, wireframe, blueprint, plastic, illustration, CGI, overexposed, text, watermark",
+                                        
+                                        # 🎯 CONTROLNET 1: PENGUNCI GEOMETRI (Depth)
+                                        "control_image_1": uploaded_sketch_file,
+                                        "controlnet_1": "depth", 
+                                        "controlnet_1_conditioning_scale": 0.75, 
+                                        
+                                        # 🎨 CONTROLNET 2: PEMETAAN MATERIAL (Semantic Segmentation)
+                                        "control_image_2": uploaded_mask_file,
+                                        "controlnet_2": "segmentation", 
+                                        "controlnet_2_conditioning_scale": 0.85, 
+                                        
+                                        # Parameter Fotorealisme
+                                        "num_inference_steps": 40, 
+                                        "guidance_scale": 4.5,     
+                                        "scheduler": "K_EULER_ANCESTRAL"
+                                    }
+                                )
+                                st.success("✅ Multi-ControlNet Berhasil Mengeksekusi Geometri dan Material!")
+                                
+                            else:
+                                # Fallback jika pengguna tidak mengunggah Color Mask (Hanya Kunci Geometri)
+                                st.info("💡 Mode Single-ControlNet (Geometri Saja). Upload Color Mask untuk pemetaan material absolut.")
+                                output = replicate.run(
+                                    "fofr/sdxl-multi-controlnet:382b6826640cdd3fcba5a5960098df4478345c2f3ccf8c3caee547432d56a7bc",
+                                    input={
+                                        "prompt": st.session_state.generated_prompt + ", photorealistic architectural render",
+                                        "negative_prompt": "3d render, sketch, cartoon",
+                                        "control_image_1": uploaded_sketch_file,
+                                        "controlnet_1": "depth",
+                                        "controlnet_1_conditioning_scale": 0.8,
+                                    }
+                                )
                             
-                            # 4. Tampilkan Hasil (Kebal Error)
+                            # 4. Tampilkan Hasil
                             if output:
                                 final_image_url = str(output[0]) if isinstance(output, list) else str(output)
-                                
-                                st.success("✅ Geometri terkunci & Render FLUX Selesai!")
-                                st.image(final_image_url, caption="Render Final FLUX Canny (Kualitas Imagen + Bentuk Presisi)", use_column_width=True)
-                                
+                                st.image(final_image_url, caption="Render Final Arsitektur", use_column_width=True)
                                 st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
                             else:
                                 st.error("Gagal mengekstrak gambar dari server.")
                                 
                         except Exception as e:
                             st.error(f"Terjadi kesalahan pada server Replicate: {e}")
+                
                                                                                                                                                                             
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
