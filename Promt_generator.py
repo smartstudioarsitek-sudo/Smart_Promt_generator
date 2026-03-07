@@ -484,19 +484,20 @@ with col_right:
                             
                             # 2. Ambil file sketsa dari memori Streamlit
                             uploaded_sketch_file.seek(0)
-                            
                             # 3. Panggil Model FLUX.1 Canny (Kualitas Setara Imagen + Presisi Garis)
                             output = replicate.run(
                                 "black-forest-labs/flux-canny-dev",
                                 input={
                                     "control_image": uploaded_sketch_file,
-                                    "prompt": st.session_state.generated_prompt + ", extremely photorealistic architectural rendering, highly detailed, V-Ray render, 8k resolution, professional architectural photography",
+                                    "prompt": st.session_state.generated_prompt + ", hyper-realistic architectural visualization, V-Ray render, 8k resolution, photorealistic",
                                     "output_format": "jpg",
-                                    "megapixels": "1", # FLUX mampu merender langsung di resolusi tinggi
-                                    "guidance": 30 # Tingkat kepatuhan estetika standar FLUX
+                                    "megapixels": "1",
+                                    "steps": 30,             # 🛠️ Biarkan AI 'memasak' render lebih lama
+                                    "guidance": 3.5,         # 🛠️ KUNCI UTAMA: Harus 3.5 agar teksturnya nyata seperti Imagen!
+                                    "control_weight": 0.85   # 🛠️ KUNCI KEDUA: Patuh pada garis 85% saja. Sisa 15% biarkan AI berkreasi bikin aspal & tanaman yang natural.
                                 }
                             )
-                            
+                                                        
                             # 4. Tampilkan Hasil
                             if output and len(output) > 0:
                                 # Mengubah FileOutput objek dari Replicate menjadi URL string
