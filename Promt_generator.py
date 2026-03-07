@@ -127,13 +127,6 @@ if 'init' not in st.session_state:
     st.session_state.mask_orange = KAMUS_PBR["Bata Merah Natural"]
     st.session_state.mask_cyan = KAMUS_PBR["Baja Struktural (Brushed)"]
     st.session_state.mask_magenta = KAMUS_PBR["Marmer Polished"]
-    
-    # === TAMBAHAN: INISIALISASI MEMORI AUDIO ===
-    st.session_state.audio_genre = "Cinematic Ambient"
-    st.session_state.audio_instrument = "Grand Piano & Subtle Strings"
-    st.session_state.audio_tempo = "Slow (70-80 BPM) - Elegan/Dramatis"
-    st.session_state.audio_mood = "Inspiring & Elegant"
-    st.session_state.audio_prompt = ""
 
 def handle_random():
     s = st.session_state
@@ -211,8 +204,7 @@ with col_left:
     )
     st.markdown("---")
     
-    # === PERUBAHAN: MENAMBAHKAN TAB AUDIO KE-5 ===
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🏛️ Geometri & Material", "💡 Tata Cahaya", "🌍 Konteks Lingkungan", "📷 Sinema & Lensa", "🎵 Audio BGM"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🏛️ Geometri & Material", "💡 Tata Cahaya", "🌍 Konteks Lingkungan", "📷 Sinema & Lensa"])
     
     with tab1:
         st.markdown('<div class="section-title">📐 Geometry & Sketch Upload</div>', unsafe_allow_html=True)
@@ -233,6 +225,7 @@ with col_left:
             
         st.markdown("---")
         
+        # PERBAIKAN DUPLICATE WIDGET ID
         use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
         st.session_state.use_color_masking = use_masking
         
@@ -323,23 +316,6 @@ with col_left:
         if "Image" in st.session_state.mode_render:
             st.session_state.presentasi = st.selectbox("Gaya Render", list(db.DB_PRESENTASI.keys()), index=list(db.DB_PRESENTASI.keys()).index(st.session_state.presentasi))
             st.session_state.engine = st.selectbox("Render Engine Target", db.DB_ENGINE, index=db.DB_ENGINE.index(st.session_state.engine))
-            
-    # === TAMBAHAN: ISI DARI TAB AUDIO ===
-    with tab5:
-        st.markdown('<div class="section-title">🎵 Audio & Soundtrack BGM</div>', unsafe_allow_html=True)
-        st.info("💡 Atur scoring musik yang akan mengiringi video presentasi arsitektur Anda.")
-        
-        list_genre = ["Cinematic Ambient", "Corporate Real Estate", "Lo-Fi Architecture", "Epic Orchestral", "Minimalist Acoustic"]
-        st.session_state.audio_genre = st.selectbox("Genre Musik", list_genre, index=list_genre.index(st.session_state.audio_genre) if st.session_state.audio_genre in list_genre else 0)
-        
-        list_inst = ["Grand Piano & Subtle Strings", "Warm Synthesizer", "Acoustic Guitar", "Cello Solo", "Marimba & Soft Percussion"]
-        st.session_state.audio_instrument = st.selectbox("Instrumen Utama", list_inst, index=list_inst.index(st.session_state.audio_instrument) if st.session_state.audio_instrument in list_inst else 0)
-        
-        list_tempo = ["Slow (70-80 BPM) - Elegan/Dramatis", "Medium (90-100 BPM) - Walkthrough/Steady", "Fast (110+ BPM) - Dinamis/Transisi"]
-        st.session_state.audio_tempo = st.selectbox("Tempo (Pacing)", list_tempo, index=list_tempo.index(st.session_state.audio_tempo) if st.session_state.audio_tempo in list_tempo else 0)
-        
-        list_mood = ["Inspiring & Elegant", "Mysterious & Moody", "Calming & Peaceful", "Futuristic & Tech"]
-        st.session_state.audio_mood = st.selectbox("Nyawa/Mood Lagu", list_mood, index=list_mood.index(st.session_state.audio_mood) if st.session_state.audio_mood in list_mood else 0)
     
     st.markdown("---")
     st.session_state.use_ref = st.checkbox("Lampirkan Referensi Style (Moodboard) di chat Gemini", value=st.session_state.use_ref)
@@ -350,8 +326,6 @@ with col_left:
 
     if st.button("✨ SUSUN PROMPT NEURAL", use_container_width=True, type="primary"):
         pl.construct_prompt()
-        # === TAMBAHAN: MERAKIT PROMPT AUDIO SECARA DINAMIS ===
-        st.session_state.audio_prompt = f"A high-fidelity {st.session_state.audio_genre} instrumental soundtrack for architectural visualization. Tempo: {st.session_state.audio_tempo}. Featuring {st.session_state.audio_instrument}. Mood: {st.session_state.audio_mood}. Clean, professional, and immersive atmospheric soundscape, perfect for a high-end property showcase video."
 
 
 # ==========================================
@@ -384,12 +358,6 @@ with col_right:
                     # Menggabungkan prompt dasar dengan instruksi kamera spesifik per shot
                     vid_prompt = f"[CINEMATIC VIDEO PROMPT] {item['cam']}, 24fps filmic look. {st.session_state.generated_prompt}"
                     st.code(vid_prompt, language="markdown")
-                    
-                # === TAMBAHAN: OUTPUT PROMPT AUDIO DI BAWAH STORYBOARD ===
-                st.markdown("---")
-                st.markdown("#### 🎵 2️⃣ Eksekusi Audio (Kirim ke Chat Gemini AI)")
-                st.info("Copy prompt musik di bawah ini dan paste langsung ke chat obrolan saya (Gemini) ini, saya akan merender lagunya untuk Anda via mesin Lyria 3!")
-                st.code(st.session_state.audio_prompt, language="markdown")
                     
             else:
                 # --- JIKA MODE GAMBAR (IMAGE) TETAP NORMAL ---
