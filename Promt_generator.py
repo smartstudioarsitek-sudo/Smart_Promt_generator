@@ -93,14 +93,18 @@ if 'init' not in st.session_state:
     st.session_state.engine_video = db.DB_ENGINE_VIDEO[0]
     
     st.session_state.use_color_masking = False
-    st.session_state.mask_red = "Beton Ekspos (Concrete)"
-    st.session_state.mask_blue = "Batu Andesit (Andesite Stone)"
-    st.session_state.mask_green = "Cat Putih (White Stucco)"
-    st.session_state.mask_yellow = "Kayu Solid (Timber Wood)"
-    st.session_state.mask_purple = "Kaca Jernih (Clear Glass)"
-    st.session_state.mask_orange = "Bata Terracotta (Terracotta Brick)"
-    st.session_state.mask_cyan = "Besi / Aluminium (Steel/Aluminium)"
-    st.session_state.mask_magenta = "Marmer / Granit (Marble/Granite)"
+    st.session_state.use_color_masking = False
+    
+    # === SUNTIKAN LOGIKA PBR (PHYSICALLY BASED RENDERING) ===
+    st.session_state.mask_red = "Raw architectural concrete, high roughness, micro-displacement map, visible formwork tie-holes, deep ambient occlusion"
+    st.session_state.mask_blue = "Rough Andesite Stone, natural displacement map, high frequency micro-bump, porous surface"
+    st.session_state.mask_green = "Clean white stucco exterior paint, subtle noise texture, matte finish, soft global illumination scattering"
+    st.session_state.mask_yellow = "Solid timber cladding, semi-gloss clear coat, visible normal map grain, subsurface scattering at edges"
+    st.session_state.mask_purple = "Clear Architectural Glass, IOR 1.52, dielectric transmission, sharp specular reflections, subtle caustics"
+    st.session_state.mask_orange = "Terracotta brickwork, matte albedo, pronounced bump map on mortar joints, realistic diffuse scattering"
+    st.session_state.mask_cyan = "Brushed structural steel, metallic workflow, low albedo, anisotropic reflections, micro-scratches"
+    st.session_state.mask_magenta = "Polished Granite/Marble, highly reflective, subtle clear coat specular, natural veining albedo"
+    
 
 def handle_random():
     s = st.session_state
