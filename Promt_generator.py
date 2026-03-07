@@ -522,43 +522,61 @@ with col_right:
                 st.warning("⚠️ **PENTING:** Karena Anda mengaktifkan *Vision Constraint* / *Color Masking*, pastikan Anda mengunggah gambar sketsa/masking tersebut secara manual ke chat AI bersamaan dengan prompt di atas!")
                 
             st.markdown("---")
+            st.markdown("#### 2️⃣ Render Presisi via API (Stable Diffusion + ControlNet)")
+            st.write("Mengunci presisi geometri sketsa Anda secara absolut menggunakan infrastruktur Replicate Cloud.")
             
-            st.markdown("#### 2️⃣ Render Instan via API (Imagen 4.0)")
-            st.write("Membutuhkan API Key dengan akses penagihan (Paid Tier) aktif.")
+            # Meminta API Key Replicate secara terpisah jika belum ada di secrets
+            replicate_api_key = st.text_input("🔑 Masukkan Replicate API Token (Wajib untuk ControlNet):", type="password", key="rep_key")
             
-            if st.button("🚀 RENDER GAMBAR SEKARANG", use_container_width=True, type="primary"):
-                with st.spinner("Memproses Raytracing & Global Illumination via Imagen 4.0..."):
-                    try:
-                        aspect_ratio_map = {"16:9": "16:9", "9:16": "9:16", "1:1": "1:1", "4:3": "4:3", "4:1": "16:9"}
-                        target_ratio = aspect_ratio_map.get(db.DB_RASIO[st.session_state.rasio], "1:1")
-
-                        result = client.models.generate_images(
-                            model='imagen-4.0-generate-001',
-                            prompt=st.session_state.generated_prompt,
-                            config=types.GenerateImagesConfig(
-                                number_of_images=1,
-                                output_mime_type="image/jpeg",
-                                aspect_ratio=target_ratio
+            if st.button("🚀 RENDER SKETSA (CONTROLNET)", use_container_width=True, type="primary"):
+                if not replicate_api_key:
+                    st.error("🚨 Mohon masukkan Replicate API Token terlebih dahulu!")
+                elif not st.session_state.uploaded_sketch:
+                    st.warning("⚠️ Sketsa belum diunggah! ControlNet membutuhkan gambar dasar (sketsa CAD/BIM) di Tab 'Geometri & Material' untuk menjiplak garis.")
+                else:
+                    with st.spinner("Membangun kandang geometri (ControlNet) & Memproses Raytracing..."):
+                        try:
+                            # 1. Daftarkan API Key ke environment agar terbaca oleh pustaka
+                            os.environ["REPLICATE_API_TOKEN"] = replicate_api_key
+                            import replicate
+                            
+                            # 2. Ambil file sketsa dari memori Streamlit dan kembalikan pointernya ke awal
+                            uploaded_sketch_file.seek(0)
+                            
+                            # 3. Panggil Model ControlNet MLSD (Khusus Arsitektur Garis Lurus) via Replicate
+                            # Kita menggunakan model MLSD karena ini paling kuat menjaga garis vertikal/horizontal agar tidak bengkok.
+                            output = replicate.run(
+                                "jagilley/controlnet-mlsd:854e87270c1a0247ce965311b1bd1258957422f28325cd69ebf52382bcbd9a25", # ID Model MLSD
+                                input={
+                                    "image": uploaded_sketch_file, # Mengirim sketsa Kakak langsung ke Cloud
+                                    "prompt": st.session_state.generated_prompt,
+                                    "a_prompt": "best quality, extremely detailed, architectural visualization, 8k resolution", # Kualitas tambahan
+                                    "n_prompt": "longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, warped perspective, converging lines",
+                                    "num_samples": 1,
+                                    "image_resolution": 512,
+                                    "ddim_steps": 20,
+                                    "scale": 9.0, # Seberapa patuh AI pada teks prompt
+                                    "control_scale": 1.5 # KEKUATAN CONTROLNET: 1.5 berarti AI dipaksa 150% patuh pada garis sketsa Kakak!
+                                }
                             )
-                        )
+                            
+                            # 4. Tampilkan Hasil (Output dari Replicate biasanya berupa List URL gambar)
+                            if output and len(output) > 1:
+                                # Index 0 biasanya gambar masking (hitam putih), Index 1 adalah hasil render final
+                                final_image_url = output[1] 
+                                
+                                st.success("✅ Geometri berhasil dikunci & Render Selesai!")
+                                st.image(final_image_url, caption="Render Final ControlNet (Presisi 99%)", use_column_width=True)
+                                
+                                st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
+                            else:
+                                st.error("Gagal mengekstrak gambar dari server.")
+                                
+                        except Exception as e:
+                            st.error(f"Terjadi kesalahan pada server Replicate: {e}")
+                            st.info("💡 Pastikan API Token Anda valid dan Anda memiliki saldo kredit di akun Replicate Anda.")
+            
                         
-                        for generated_image in result.generated_images:
-                            image = Image.open(io.BytesIO(generated_image.image.image_bytes))
-                            st.image(image, caption=f"Render Final: {st.session_state.tipe}", use_column_width=True)
-                            
-                            buf = io.BytesIO()
-                            image.save(buf, format="JPEG")
-                            byte_im = buf.getvalue()
-                            st.download_button(
-                                label="💾 Unduh Render Resolusi Tinggi", data=byte_im,
-                                file_name=f"Render_{st.session_state.tipe.replace(' ', '_')}.jpg",
-                                mime="image/jpeg", use_container_width=True
-                            )
-                            
-                    except Exception as e:
-                        st.error(f"Terjadi kesalahan rendering API: {e}")
-                        st.info("💡 Jika muncul 'only available on paid plans', gunakan Opsi 1 (Copy Prompt) di atas.")
-            
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
     with tab_inpaint:
