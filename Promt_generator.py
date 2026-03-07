@@ -478,30 +478,36 @@ with col_right:
                 else:
                     with st.spinner("Membangun kandang geometri (ControlNet) & Memproses Raytracing..."):
                         try:
+                            # 1. Daftarkan API Key ke environment agar terbaca oleh pustaka
                             os.environ["REPLICATE_API_TOKEN"] = replicate_api_key
                             import replicate
                             
+                            # 2. Ambil file sketsa dari memori Streamlit dan kembalikan pointernya ke awal
                             uploaded_sketch_file.seek(0)
                             
+                            # 3. Panggil Model ControlNet Terpadu (Rossjillian) via Replicate
                             output = replicate.run(
-                                "jagilley/controlnet-mlsd:854e87270c1a0247ce965311b1bd1258957422f28325cd69ebf52382bcbd9a25",
+                                "rossjillian/controlnet:795433b19458d0f4fa172a7ccf93178d2adb1cb8ab2ad6c8fdc33fdbcd49f477",
                                 input={
                                     "image": uploaded_sketch_file,
-                                    "prompt": st.session_state.generated_prompt,
-                                    "a_prompt": "best quality, extremely detailed, architectural visualization, 8k resolution",
-                                    "n_prompt": "longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, warped perspective, converging lines",
-                                    "num_samples": 1,
+                                    "prompt": st.session_state.generated_prompt + ", best quality, extremely detailed, architectural visualization, 8k resolution",
+                                    "structure": "hough", # hough adalah algoritma MLSD untuk mendeteksi garis lurus arsitektur yang sangat presisi
+                                    "negative_prompt": "longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, warped perspective, converging lines",
+                                    "num_outputs": 1,
                                     "image_resolution": 512,
-                                    "ddim_steps": 20,
-                                    "scale": 9.0,
-                                    "control_scale": 1.5
+                                    "steps": 20,
+                                    "scale": 9.0
                                 }
                             )
                             
-                            if output and len(output) > 1:
-                                final_image_url = output[1] 
+                            # 4. Tampilkan Hasil
+                            if output and len(output) > 0:
+                                # Model ini mengembalikan gambar render langsung di index ke-0
+                                final_image_url = output[0] 
+                                
                                 st.success("✅ Geometri berhasil dikunci & Render Selesai!")
                                 st.image(final_image_url, caption="Render Final ControlNet (Presisi 99%)", use_column_width=True)
+                                
                                 st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
                             else:
                                 st.error("Gagal mengekstrak gambar dari server.")
@@ -509,7 +515,7 @@ with col_right:
                         except Exception as e:
                             st.error(f"Terjadi kesalahan pada server Replicate: {e}")
                             st.info("💡 Pastikan API Token Anda valid dan Anda memiliki saldo kredit di akun Replicate Anda.")
-                            
+                                                    
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
             
