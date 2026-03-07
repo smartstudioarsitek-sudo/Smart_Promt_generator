@@ -20,6 +20,30 @@ except ImportError:
     HAS_CANVAS = False
 
 # ==========================================
+# 0. KAMUS PINTAR PBR (INDONESIA -> ENGLISH)
+# ==========================================
+KAMUS_PBR = {
+    "Beton Ekspos Halus": "Smooth architectural concrete, low roughness, soft specular reflection",
+    "Beton Kasar / Bekisting": "Raw architectural concrete, high roughness, micro-displacement map, visible formwork tie-holes",
+    "Beton Pracetak (Precast)": "Precast concrete panels, uniform texture, subtle edge chamfers, clean joints",
+    "Kaca Jernih": "Clear Architectural Glass, IOR 1.52, dielectric transmission, sharp specular",
+    "Kaca Buram (Frosted)": "Frosted architectural glass, high roughness, IOR 1.45, blurred dielectric transmission",
+    "Kaca Reflektif (Cermin)": "Highly reflective mirror glass, metallic workflow, sharp environmental reflections, IOR 2.0",
+    "Kayu Solid (Glossy)": "Polished solid timber, clear coat specular, visible wood grain normal map",
+    "Kayu Natural (Matte)": "Natural raw wood timber, high roughness, diffuse scattering, prominent grain displacement",
+    "Bata Merah Natural": "Terracotta brickwork, matte albedo, pronounced bump map on mortar joints",
+    "Bata Putih / Expose": "Painted white brickwork, subtle mortar depth, diffuse reflection, low specular",
+    "Batu Andesit": "Rough Andesite Stone, natural displacement map, high frequency micro-bump, porous surface",
+    "Baja Struktural (Brushed)": "Brushed structural steel, metallic workflow, low albedo, anisotropic reflections, micro-scratches",
+    "Aluminium Anodized": "Anodized aluminum frame, semi-rough metallic, uniform scatter, subtle edge highlights",
+    "Cat Eksterior (Putih/Warna)": "Clean exterior stucco paint, subtle noise texture, matte finish, soft global illumination scattering",
+    "Marmer Polished": "Polished Marble, highly reflective, subtle clear coat specular, natural veining albedo",
+    "Keramik Matte": "Matte ceramic tiles, subtle grout lines, low specular, uniform albedo",
+    "Kustom (Ketik Manual)": "" # Opsi fleksibel
+}
+LIST_MATERIAL_PBR = list(KAMUS_PBR.keys())
+
+# ==========================================
 # 0. KONFIGURASI HALAMAN (WAJIB PALING ATAS)
 # ==========================================
 st.set_page_config(page_title="SmartPromt Generator v2.1", layout="wide", initial_sidebar_state="expanded")
@@ -28,7 +52,6 @@ st.set_page_config(page_title="SmartPromt Generator v2.1", layout="wide", initia
 # 1. KONFIGURASI KEAMANAN & API
 # ==========================================
 def get_api_key():
-    """Mengambil API Key dengan Aman"""
     try:
         return st.secrets.get("GEMINI_API_KEY", st.secrets.get("GOOGLE_API_KEY", ""))
     except Exception:
@@ -92,19 +115,18 @@ if 'init' not in st.session_state:
     st.session_state.storytelling_vibe = db.DB_STORYTELLING_VIBE[0]
     st.session_state.engine_video = db.DB_ENGINE_VIDEO[0]
     
-    st.session_state.use_color_masking = False
-    st.session_state.use_color_masking = False
+    # Inisialisasi status Checkbox (diperbaiki agar tidak duplikat)
+    st.session_state.chk_color_masking = False
     
-    # === SUNTIKAN LOGIKA PBR (PHYSICALLY BASED RENDERING) ===
-    st.session_state.mask_red = "Raw architectural concrete, high roughness, micro-displacement map, visible formwork tie-holes, deep ambient occlusion"
-    st.session_state.mask_blue = "Rough Andesite Stone, natural displacement map, high frequency micro-bump, porous surface"
-    st.session_state.mask_green = "Clean white stucco exterior paint, subtle noise texture, matte finish, soft global illumination scattering"
-    st.session_state.mask_yellow = "Solid timber cladding, semi-gloss clear coat, visible normal map grain, subsurface scattering at edges"
-    st.session_state.mask_purple = "Clear Architectural Glass, IOR 1.52, dielectric transmission, sharp specular reflections, subtle caustics"
-    st.session_state.mask_orange = "Terracotta brickwork, matte albedo, pronounced bump map on mortar joints, realistic diffuse scattering"
-    st.session_state.mask_cyan = "Brushed structural steel, metallic workflow, low albedo, anisotropic reflections, micro-scratches"
-    st.session_state.mask_magenta = "Polished Granite/Marble, highly reflective, subtle clear coat specular, natural veining albedo"
-    
+    # Nilai Bawaan Material PBR (Inggris)
+    st.session_state.mask_red = KAMUS_PBR["Beton Kasar / Bekisting"]
+    st.session_state.mask_blue = KAMUS_PBR["Batu Andesit"]
+    st.session_state.mask_green = KAMUS_PBR["Cat Eksterior (Putih/Warna)"]
+    st.session_state.mask_yellow = KAMUS_PBR["Kayu Natural (Matte)"]
+    st.session_state.mask_purple = KAMUS_PBR["Kaca Jernih"]
+    st.session_state.mask_orange = KAMUS_PBR["Bata Merah Natural"]
+    st.session_state.mask_cyan = KAMUS_PBR["Baja Struktural (Brushed)"]
+    st.session_state.mask_magenta = KAMUS_PBR["Marmer Polished"]
 
 def handle_random():
     s = st.session_state
@@ -186,13 +208,11 @@ with col_left:
     
     with tab1:
         st.markdown('<div class="section-title">📐 Geometry & Sketch Upload</div>', unsafe_allow_html=True)
-        # PERBAIKAN BYPASS TIPE UNTUK JFIF
         uploaded_sketch_file = st.file_uploader("Upload Sketsa Garis / Base Image", type=None, key="sketch_up")
         
         if uploaded_sketch_file is not None:
             try:
                 sketch_img = Image.open(uploaded_sketch_file)
-                # PERBAIKAN FATAL: GANTI use_container_width JADI use_column_width
                 st.image(sketch_img, caption="Preview Sketsa Aktual", use_column_width=True) 
                 st.session_state.uploaded_sketch = True
                 st.success("✅ Sketsa terdeteksi! 'Vision Constraint' akan diaktifkan.")
@@ -204,30 +224,33 @@ with col_left:
             st.session_state.uploaded_sketch = None
             
         st.markdown("---")
-        st.session_state.use_color_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", value=st.session_state.use_color_masking)
+        
+        # PERBAIKAN DUPLICATE WIDGET ID
+        use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
+        st.session_state.use_color_masking = use_masking
+        
         if st.session_state.use_color_masking:
-            st.info("💡 Pastikan Anda mengunggah gambar 'Color Mask' bersolusi tinggi dengan warna kontras di chat Gemini.")
+            st.info("💡 Pilih material dalam bahasa Indonesia. Aplikasi akan otomatis merakit mantra 3D/PBR bahasa Inggris ke dalam prompt.")
             c1, c2 = st.columns(2)
             
-            st.markdown("---")
-        st.session_state.use_color_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", value=st.session_state.use_color_masking)
-        if st.session_state.use_color_masking:
-            st.info("💡 Pastikan Anda mengunggah gambar 'Color Mask' bersolusi tinggi dengan warna kontras di chat AI.")
-            
-            c1, c2 = st.columns(2)
-            
-            # --- FUNGSI PEMBANTU UNTUK UI PBR ---
+            # --- FUNGSI PEMBANTU DROPDOWN PBR ---
             def pbr_selector(label, key_state):
-                # 1. Tampilkan Dropdown Bahasa Indonesia
-                pilihan_indo = st.selectbox(label, db.LIST_MATERIAL_PBR, key=f"sel_{key_state}")
+                current_english = st.session_state.get(key_state, "")
+                # Cari padanan bahasa Indonesia dari dictionary
+                current_indo = "Kustom (Ketik Manual)"
+                for indo, eng in KAMUS_PBR.items():
+                    if eng == current_english:
+                        current_indo = indo
+                        break
                 
-                # 2. Jika user pilih "Kustom", munculkan text_input biasa
+                # Render Dropdown Bahasa Indonesia
+                pilihan_indo = st.selectbox(label, LIST_MATERIAL_PBR, index=LIST_MATERIAL_PBR.index(current_indo), key=f"sel_{key_state}")
+                
                 if pilihan_indo == "Kustom (Ketik Manual)":
-                     st.session_state[key_state] = st.text_input(f"Ketik instruksi PBR untuk {label}:", value=st.session_state.get(key_state, ""))
+                    st.session_state[key_state] = st.text_input(f"Ketik instruksi PBR (English) untuk {label}:", value=current_english, key=f"txt_{key_state}")
                 else:
-                    # 3. Jika pilih dari daftar, simpan mantra Inggrisnya secara diam-diam
-                    st.session_state[key_state] = db.KAMUS_PBR[pilihan_indo]
-                    
+                    st.session_state[key_state] = KAMUS_PBR[pilihan_indo]
+            
             with c1:
                 pbr_selector("🔴 Merah (Red Zone)", "mask_red")
                 pbr_selector("🟢 Hijau (Green Zone)", "mask_green")
@@ -238,7 +261,6 @@ with col_left:
                 pbr_selector("🟡 Kuning (Yellow Zone)", "mask_yellow")
                 pbr_selector("🟠 Oranye (Orange Zone)", "mask_orange")
                 pbr_selector("🩷 Magenta (Magenta Zone)", "mask_magenta")
-            
                         
         st.markdown("---")
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
@@ -346,7 +368,6 @@ with col_right:
                         
                         for generated_image in result.generated_images:
                             image = Image.open(io.BytesIO(generated_image.image.image_bytes))
-                            # PERBAIKAN FATAL: GANTI use_container_width JADI use_column_width
                             st.image(image, caption=f"Render Final: {st.session_state.tipe}", use_column_width=True)
                             
                             buf = io.BytesIO()
@@ -372,7 +393,6 @@ with col_right:
         if not HAS_CANVAS:
             st.error("🚨 Pustaka `streamlit-drawable-canvas` belum terdeteksi. Silakan install via terminal: `pip install streamlit-drawable-canvas`")
         else:
-            # PERBAIKAN UPLOAD JFIF BYPASS
             base_img_file = st.file_uploader("🖼️ Unggah Gambar Base Render", type=None, key="inpaint_upload")
                         
             if base_img_file is not None:
@@ -450,10 +470,8 @@ with col_right:
                                             
                                             col_res1, col_res2 = st.columns(2)
                                             with col_res1:
-                                                # PERBAIKAN FATAL: GANTI use_container_width JADI use_column_width
                                                 st.image(base_rgb, caption="Gambar Asli (Sebelum)", use_column_width=True)
                                             with col_res2:
-                                                # PERBAIKAN FATAL: GANTI use_container_width JADI use_column_width
                                                 st.image(edited_img, caption=f"Hasil Revisi: {micro_prompt}", use_column_width=True)
                                                 
                                             buf = io.BytesIO()
@@ -477,16 +495,6 @@ with col_right:
                 except Exception:
                      st.error("❌ File yang Anda unggah bukan format gambar yang bisa dibaca.")
 
-    with tab_hist:
-        if not st.session_state.history_ledger:
-            st.caption("Riwayat prompt Anda akan muncul di sini (Maksimal 10 terakhir).")
-        else:
-            for i, item in enumerate(st.session_state.history_ledger):
-                with st.expander(f"{item['title']} (Terbaru)" if i==0 else item['title'], expanded=(i==0)):
-                    st.code(item['prompt'], language="markdown")
-    # ========================================================
-    # TAB BARU: AI UPSCALER 4K/8K (MODUL 3)
-    # ========================================================
     with tab_upscale:
         st.markdown("### 🔍 Ultra HD Upscaler (4K/8K)")
         st.info("Tingkatkan resolusi gambar final Anda tanpa pecah (pixelated) untuk kebutuhan cetak brosur atau presentasi direksi.")
@@ -506,14 +514,9 @@ with col_right:
                 
             if st.button("🚀 Proses Upscale (Simulasi)", type="primary", use_container_width=True):
                 with st.spinner(f"Menginisiasi jaringan saraf penajam resolusi ke {target_res}..."):
-                    # CATATAN UNTUK PENGEMBANG: 
-                    # Di sinilah Anda nanti akan memasukkan endpoint API dari Replicate (Real-ESRGAN) 
-                    # atau model Upscaler Cloud lainnya.
-                    
                     st.success("✅ Gambar siap di-upscale!")
                     st.warning("⚠️ Karena keterbatasan memori Streamlit Cloud saat ini, fitur Upscale sejati (pemrosesan piksel mentah) disarankan menggunakan API eksternal khusus (seperti Krea AI / Magnific) atau dijalankan di mesin lokal (Local GPU).")
                     
-                    # Simulasi tombol unduh untuk UX yang utuh
                     buf_up = io.BytesIO()
                     up_img.save(buf_up, format="PNG")
                     st.download_button(
@@ -523,3 +526,11 @@ with col_right:
                         mime="image/png",
                         use_container_width=True
                     )
+                    
+    with tab_hist:
+        if not st.session_state.history_ledger:
+            st.caption("Riwayat prompt Anda akan muncul di sini (Maksimal 10 terakhir).")
+        else:
+            for i, item in enumerate(st.session_state.history_ledger):
+                with st.expander(f"{item['title']} (Terbaru)" if i==0 else item['title'], expanded=(i==0)):
+                    st.code(item['prompt'], language="markdown")
