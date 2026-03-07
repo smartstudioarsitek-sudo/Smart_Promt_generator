@@ -352,17 +352,26 @@ with col_right:
                         
             if base_img_file is not None:
                 try:
-                    base_image = Image.open(base_img_file).convert("RGBA")
+                    # 1. Buka gambar mentah
+                    temp_img = Image.open(base_img_file).convert("RGB")
                     
+                    # 2. Skala ukuran gambar
                     max_width = 600
-                    if base_image.width > max_width:
-                        ratio = max_width / base_image.width
-                        new_height = int(base_image.height * ratio)
-                        base_image_resized = base_image.resize((max_width, new_height))
-                    else:
-                        base_image_resized = base_image
+                    if temp_img.width > max_width:
+                        ratio = max_width / temp_img.width
+                        new_height = int(temp_img.height * ratio)
+                        temp_img = temp_img.resize((max_width, new_height))
+                    
+                    # 3. "CUCI" GAMBAR: Paksa simpan sebagai PNG di memori agar browser tidak rewel
+                    clean_io = io.BytesIO()
+                    temp_img.save(clean_io, format="PNG")
+                    clean_io.seek(0)
+                    
+                    # 4. Buka kembali gambar yang sudah suci menjadi PNG untuk masuk ke kanvas
+                    base_image_resized = Image.open(clean_io).convert("RGBA")
 
                     st.markdown("**1. Lukis Area Masking**")
+            
                     col_canvas_tools, col_canvas = st.columns([1, 3])
                     
                     with col_canvas_tools:
