@@ -157,7 +157,6 @@ def construct_prompt():
                        
     if getattr(s, 'use_ref', False):
         base_arch += "Please match the overall mood, color palette, and lighting style of the ATTACHED REFERENCE IMAGE. "
-
     # --- 3. KOMPOSISI FOTOGRAFI & KAMERA ---
     if "Auto" not in lensa_khusus:
         lens = lensa_khusus.split(" (")[0]
@@ -166,10 +165,20 @@ def construct_prompt():
         
     camera_setup = kamera_film.split(" (")[0]
     
+    # 🛠️ FASE 3: INJEKSI STANDAR 2G STUDIO (Koreksi Distorsi Optik)
+    tilt_shift_mandate = ""
+    if "Tilt-Shift" in lensa_khusus:
+        tilt_shift_mandate = (
+            "[OPTICAL CORRECTION MANDATE]: Enforce absolute 2-point perspective. "
+            "Vertical lines of the architecture MUST remain perfectly straight, plumb, and parallel to the frame edges. "
+            "NEGATIVE PROMPT: --no perspective distortion, converging vertical lines, keystone effect, warped structural geometry. "
+        )
+    
     composition_macros = (
         "[CINEMATIC COMPOSITION DIRECTIVES]: Strictly apply Rule of Thirds composition. "
         "Integrate natural leading lines converging towards the main architectural subject. "
-        "Establish spatial scale using realistic depth of field with subtle blurred foreground elements (e.g., foliage or silhouettes)."
+        "Establish spatial scale using realistic depth of field with subtle blurred foreground elements (e.g., foliage or silhouettes). "
+        f"{tilt_shift_mandate}"
     )
 
     # --- 4. MATERIAL & KONTEKS SITE ---
