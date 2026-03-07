@@ -69,7 +69,18 @@ def check_conflicts(s):
     
     if "Video" in mode_render and not getattr(s, 'engine_video', None):
         conflicts.append("⚠️ **Peringatan Koherensi Temporal:** Pastikan menggunakan prompt ini pada engine video berarsitektur NeRF (seperti Luma atau Kling) untuk menghindari flickering struktur.")
-
+# 🛠️ PERBAIKAN PRIORITAS 4: Pencegahan Halusinasi Color Masking Kosong
+    use_masking = getattr(s, 'use_color_masking', False)
+    if use_masking:
+        mask_values = [
+            getattr(s, 'mask_white', ''), getattr(s, 'mask_gray', ''), getattr(s, 'mask_dark', ''),
+            getattr(s, 'mask_brown', ''), getattr(s, 'mask_brick', ''), getattr(s, 'mask_blue', ''),
+            getattr(s, 'mask_cream', ''), getattr(s, 'mask_green', '')
+        ]
+        # Jika semua nilai kosong atau hanya spasi
+        if all(not val or not str(val).strip() for val in mask_values):
+            conflicts.append("⚠️ **Peringatan Masking:** Fitur 'Semantic Color Masking' aktif, tetapi Anda tidak mendefinisikan satupun material. Pemetaan warna akan diabaikan oleh sistem agar AI tidak berhalusinasi.")
+            
     return conflicts
 
 def construct_prompt():
@@ -118,9 +129,8 @@ def construct_prompt():
     if uploaded_sketch is not None:
         ai_control = getattr(s, 'ai_control', db.DB_AI_CONTROL[0])
         base_arch += f"\n[LAYER 2 RESTRICTION: {ai_control.upper()}]. STRICT MANDATE: Geometry, structural proportions, and absolute elevations must 100% follow the topology of the uploaded sketch. DO NOT hallucinate basic architectural elements.\n"
-        
+
         if getattr(s, 'use_color_masking', False):
-            base_arch += "\n[MATERIAL MAPPING MANDATE]: Strictly map the following PBR materials to their corresponding visual color zones in the attached sketch/reference image:\n"
             # Pemanggilan aman untuk masking warna
             mask_mapping = {
                 "WHITE/LIGHT": getattr(s, 'mask_white', ''),
@@ -133,12 +143,18 @@ def construct_prompt():
                 "GREEN": getattr(s, 'mask_green', '')
             }
             
-            for zone, pbr_val in mask_mapping.items():
-                if pbr_val:
-                    base_arch += f"- {zone} SURFACES: {enhance_with_pbr(pbr_val)}\n"
+            # 🛠️ PERBAIKAN: Saring hanya material yang benar-benar diisi oleh user
+            active_masks = {zone: pbr_val for zone, pbr_val in mask_mapping.items() if pbr_val and str(pbr_val).strip()}
             
-            base_arch += "CRITICAL: DO NOT mix materials. Maintain sharp material transitions exactly as defined by the visual boundaries of these specific colors in the base image.\n"
-                    
+            # Jika ada minimal 1 material yang valid, baru cetak mandat ke dalam prompt
+            if active_masks:
+                base_arch += "\n[MATERIAL MAPPING MANDATE]: Strictly map the following PBR materials to their corresponding visual color zones in the attached sketch/reference image:\n"
+                
+                for zone, pbr_val in active_masks.items():
+                    base_arch += f"- {zone} SURFACES: {enhance_with_pbr(pbr_val)}\n"
+                
+                base_arch += "CRITICAL: DO NOT mix materials. Maintain sharp material transitions exactly as defined by the visual boundaries of these specific colors in the base image.\n"
+                       
     if getattr(s, 'use_ref', False):
         base_arch += "Please match the overall mood, color palette, and lighting style of the ATTACHED REFERENCE IMAGE. "
 
