@@ -118,7 +118,7 @@ if 'init' not in st.session_state:
     # Inisialisasi status Checkbox (diperbaiki agar tidak duplikat)
     st.session_state.chk_color_masking = False
     
-    with c1:
+            with c1:
                 pbr_selector("⚪ Putih/Terang (Dinding/Wall)", "mask_white")
                 pbr_selector("🔘 Abu-Abu (Kolom/Beton)", "mask_gray")
                 pbr_selector("⚫ Abu Gelap/Hitam (Kusen/Atap)", "mask_dark")
