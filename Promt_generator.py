@@ -237,14 +237,12 @@ with col_left:
             # --- FUNGSI PEMBANTU DROPDOWN PBR ---
             def pbr_selector(label, key_state):
                 current_english = st.session_state.get(key_state, "")
-                # Cari padanan bahasa Indonesia dari dictionary
                 current_indo = "Kustom (Ketik Manual)"
                 for indo, eng in KAMUS_PBR.items():
                     if eng == current_english:
                         current_indo = indo
                         break
                 
-                # Render Dropdown Bahasa Indonesia
                 pilihan_indo = st.selectbox(label, LIST_MATERIAL_PBR, index=LIST_MATERIAL_PBR.index(current_indo), key=f"sel_{key_state}")
                 
                 if pilihan_indo == "Kustom (Ketik Manual)":
@@ -263,6 +261,7 @@ with col_left:
                 pbr_selector("🩵 Biru Muda (Kaca Jendela)", "mask_blue")
                 pbr_selector("🟡 Krem/Kuning (Lantai/Keramik)", "mask_cream")
                 pbr_selector("🟢 Hijau/Bebas (Vegetasi/Lainnya)", "mask_green")
+        
                                 
         st.markdown("---")
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
