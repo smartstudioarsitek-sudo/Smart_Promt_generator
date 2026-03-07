@@ -484,27 +484,26 @@ with col_right:
                             
                             # 2. Ambil file sketsa dari memori Streamlit
                             uploaded_sketch_file.seek(0)
-                            # 3. Panggil Model FLUX.1 Canny (Kualitas Setara Imagen + Presisi Garis)
+                            
+                            # 3. Panggil Mesin SDXL ControlNet (Kualitas Fotorealistik Tinggi Khusus Arsitektur)
                             output = replicate.run(
-                                "black-forest-labs/flux-canny-dev",
+                                "lucataco/sdxl-controlnet:06d6fae3b75ab68a28cd2900afa6033166910dd09fd9751047043a5bbb4c184b",
                                 input={
-                                    "control_image": uploaded_sketch_file,
-                                    "prompt": st.session_state.generated_prompt + ", hyper-realistic architectural visualization, V-Ray render, 8k resolution, photorealistic",
-                                    "output_format": "jpg",
-                                    "megapixels": "1",
-                                    "steps": 30,             # 🛠️ Biarkan AI 'memasak' render lebih lama
-                                    "guidance": 3.5,         # 🛠️ KUNCI UTAMA: Harus 3.5 agar teksturnya nyata seperti Imagen!
-                                    "control_weight": 0.85   # 🛠️ KUNCI KEDUA: Patuh pada garis 85% saja. Sisa 15% biarkan AI berkreasi bikin aspal & tanaman yang natural.
+                                    "image": uploaded_sketch_file,
+                                    "prompt": st.session_state.generated_prompt + ", ultra photorealistic architectural photography, architectural digest, V-Ray render, Unreal Engine 5, 8k resolution, highly detailed, realistic lighting",
+                                    "negative_prompt": "low quality, bad quality, sketches, cartoon, 3d render, flat shading, UI, interface, text, watermark, plastic, dull, sketchup, false colors",
+                                    "num_inference_steps": 40,
+                                    "condition_scale": 0.5  # 🛠️ KUNCI UTAMA: Di angka 0.5, AI akan mempertahankan struktur jendela/pilar, tapi MENGHANCURKAN tekstur kartun asli SketchUp dan menimpanya dengan material nyata.
                                 }
                             )
-                                                        
+                            
                             # 4. Tampilkan Hasil
                             if output and len(output) > 0:
-                                # Mengubah FileOutput objek dari Replicate menjadi URL string
-                                final_image_url = str(output[0]) 
+                                # Model ini mengembalikan gambar final di posisi terakhir array
+                                final_image_url = str(output[-1]) 
                                 
-                                st.success("✅ Geometri berhasil dikunci & Render FLUX Selesai!")
-                                st.image(final_image_url, caption="Render Final FLUX Canny (Presisi Absolut + Super Realistis)", use_column_width=True)
+                                st.success("✅ Geometri terkunci & Render SDXL Super Realistis Selesai!")
+                                st.image(final_image_url, caption="Render Final SDXL ControlNet (Setara Imagen)", use_column_width=True)
                                 
                                 st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
                             else:
@@ -513,7 +512,7 @@ with col_right:
                         except Exception as e:
                             st.error(f"Terjadi kesalahan pada server Replicate: {e}")
                             st.info("💡 Pastikan API Token Anda valid dan Anda memiliki saldo kredit di akun Replicate Anda.")
-                                                                                                    
+                                                                                                                            
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
             
