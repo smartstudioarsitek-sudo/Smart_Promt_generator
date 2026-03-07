@@ -4,6 +4,7 @@ import os
 import io
 import numpy as np
 from PIL import Image
+import json
 
 import database_params as db
 import prompt_logic as pl
@@ -109,7 +110,25 @@ with st.sidebar:
         else:
             st.error("🚨 Kunci Akses Diperlukan!")
             st.stop()
+# ==========================================
+# 🛠️ PERBAIKAN PRIORITAS 4: MANAJEMEN STATE PERSISTEN
+# ==========================================
+PRESET_FILE = "smartbim_presets.json"
 
+def load_custom_presets():
+    if os.path.exists(PRESET_FILE):
+        try:
+            with open(PRESET_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_custom_preset(name, data):
+    presets = load_custom_presets()
+    presets[name] = data
+    with open(PRESET_FILE, "w") as f:
+        json.dump(presets, f, indent=4)
 # ==========================================
 # 2. INITIALIZE SESSION STATE (Memori Aplikasi)
 # ==========================================
@@ -143,25 +162,29 @@ if 'init' not in st.session_state:
     st.session_state.generated_prompt = ""
     st.session_state.conflicts = []
     st.session_state.history_ledger = []
-    st.session_state.custom_presets = {} 
+    
+    # Muat profil langsung dari hard drive, bukan sekadar memori sementara
+    st.session_state.custom_presets = load_custom_presets() 
     
     st.session_state.mode_render = "📸 Image (Still Photo)"
     st.session_state.camera_motion = db.DB_CAMERA_MOTION[0]
     st.session_state.storytelling_vibe = db.DB_STORYTELLING_VIBE[0]
     st.session_state.engine_video = db.DB_ENGINE_VIDEO[0]
     
-    # Inisialisasi status Checkbox 
     st.session_state.chk_color_masking = False
     
-    # Nilai Bawaan Material PBR (Mode Warna SketchUp Umum)
-    st.session_state.mask_white = KAMUS_PBR["Cat Eksterior (Putih/Warna)"]
-    st.session_state.mask_gray = KAMUS_PBR["Beton Ekspos Halus"]
-    st.session_state.mask_dark = KAMUS_PBR["Aluminium Anodized"]
-    st.session_state.mask_brown = KAMUS_PBR["Kayu Natural (Matte)"]
-    st.session_state.mask_brick = KAMUS_PBR["Bata Merah Natural"]
-    st.session_state.mask_blue = KAMUS_PBR["Kaca Jernih"]
-    st.session_state.mask_cream = KAMUS_PBR["Keramik Matte"]
-    st.session_state.mask_green = KAMUS_PBR["Batu Alam Palimanan"]
+    # 🛠️ PERBAIKAN PRIORITAS 4: Hapus Paksaan Dummy Data Warna
+    # Biarkan kosong agar arsitek / drafter bebas menentukan legenda warnanya sendiri
+    st.session_state.mask_white = ""
+    st.session_state.mask_gray = ""
+    st.session_state.mask_dark = ""
+    st.session_state.mask_brown = ""
+    st.session_state.mask_brick = ""
+    st.session_state.mask_blue = ""
+    st.session_state.mask_cream = ""
+    st.session_state.mask_green = ""
+    
+    
 
 def handle_random():
     s = st.session_state
@@ -219,7 +242,8 @@ with col_left:
         with col_p2:
             new_preset_name = st.text_input("Nama Preset Baru:", placeholder="Misal: Villa Gaya Saya")
             if st.button("💾 Simpan Saat Ini", use_container_width=True) and new_preset_name:
-                st.session_state.custom_presets[new_preset_name] = {
+                
+                new_data = {
                     "tipe": st.session_state.tipe, "gaya": st.session_state.gaya, "material": st.session_state.material,
                     "suasana": st.session_state.suasana, "cuaca": st.session_state.cuaca, "view": st.session_state.view,
                     "temp_warna": st.session_state.temp_warna, "fixture_int": st.session_state.fixture_int,
@@ -228,8 +252,16 @@ with col_left:
                     "presentasi": st.session_state.presentasi, "skenario": st.session_state.skenario, "engine": st.session_state.engine,
                     "lensa_khusus": st.session_state.lensa_khusus, "kamera_film": st.session_state.kamera_film, "weathering": st.session_state.weathering
                 }
-                st.success(f"Preset '{new_preset_name}' disimpan!")
+                
+                # Simpan ke memori sesi
+                st.session_state.custom_presets[new_preset_name] = new_data
+                
+                # 🛠️ Simpan permanen ke file JSON lokal
+                save_custom_preset(new_preset_name, new_data)
+                
+                st.success(f"Preset '{new_preset_name}' disimpan secara permanen!")
                 st.rerun()
+        
     
     st.markdown("---")
     st.session_state.mode_render = st.radio(
