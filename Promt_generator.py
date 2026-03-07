@@ -229,7 +229,7 @@ with col_left:
         # PERBAIKAN DUPLICATE WIDGET ID
         use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
         st.session_state.use_color_masking = use_masking
-        
+
         if st.session_state.use_color_masking:
             st.info("💡 Pilih material dalam bahasa Indonesia. Aplikasi akan otomatis merakit mantra 3D/PBR bahasa Inggris ke dalam prompt.")
             c1, c2 = st.columns(2)
@@ -253,16 +253,17 @@ with col_left:
                     st.session_state[key_state] = KAMUS_PBR[pilihan_indo]
             
             with c1:
-                pbr_selector("🔴 Merah (Red Zone)", "mask_red")
-                pbr_selector("🟢 Hijau (Green Zone)", "mask_green")
-                pbr_selector("🟣 Ungu (Purple Zone)", "mask_purple")
-                pbr_selector("🩵 Cyan (Cyan Zone)", "mask_cyan")
+                pbr_selector("⚪ Putih/Terang (Dinding/Wall)", "mask_white")
+                pbr_selector("🔘 Abu-Abu (Kolom/Beton)", "mask_gray")
+                pbr_selector("⚫ Abu Gelap/Hitam (Kusen/Atap)", "mask_dark")
+                pbr_selector("🟤 Coklat (Pintu/Kayu)", "mask_brown")
+                
             with c2:
-                pbr_selector("🔵 Biru (Blue Zone)", "mask_blue")
-                pbr_selector("🟡 Kuning (Yellow Zone)", "mask_yellow")
-                pbr_selector("🟠 Oranye (Orange Zone)", "mask_orange")
-                pbr_selector("🩷 Magenta (Magenta Zone)", "mask_magenta")
-                        
+                pbr_selector("🧱 Merah Bata (Aksen Dinding)", "mask_brick")
+                pbr_selector("🩵 Biru Muda (Kaca Jendela)", "mask_blue")
+                pbr_selector("🟡 Krem/Kuning (Lantai/Keramik)", "mask_cream")
+                pbr_selector("🟢 Hijau/Bebas (Vegetasi/Lainnya)", "mask_green")
+                                
         st.markdown("---")
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
         st.session_state.gaya = st.selectbox("Gaya Arsitektur", db.DB_GAYA, index=db.DB_GAYA.index(st.session_state.gaya))
