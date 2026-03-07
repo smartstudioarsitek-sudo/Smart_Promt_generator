@@ -338,9 +338,32 @@ with col_right:
         if st.session_state.generated_prompt:
             st.success("✅ Logika arsitektural & komposisi fotografi siap dieksekusi!")
             
-            st.markdown("#### 1️⃣ Eksekusi via Gemini Web / AI Lainnya (Gratis)")
-            st.write("Klik ikon **Copy** di pojok kanan atas kotak ini, lalu *paste* ke chat AI pilihan Anda.")
-            st.code(st.session_state.generated_prompt, language="markdown")
+            st.markdown("#### 1️⃣ Eksekusi via Gemini Web / AI Video (Gratis/Pihak Ketiga)")
+            
+            # --- LOGIKA SUTRADARA (STORYBOARD) KHUSUS VIDEO ---
+            if "Video" in st.session_state.mode_render:
+                st.info("🎥 **MODE STORYBOARD AKTIF:** Render setiap shot di bawah ini satu per satu (masing-masing 4-8 detik), lalu gabungkan di software editing untuk membuat video sinematik panjang.")
+                
+                # Daftar pergerakan kamera ala Kunkun Visual
+                shot_list = [
+                    {"shot": "Shot 1: Establishing Aerial (8 Detik)", "cam": "Slow drone hyperlapse, high angle sweeping down, revealing the architecture in its context"},
+                    {"shot": "Shot 2: Facade Tracking (8 Detik)", "cam": "Low angle tracking shot on a slider, moving smoothly left to right, focusing on the facade"},
+                    {"shot": "Shot 3: Material Close-Up (8 Detik)", "cam": "Macro focus pull, subtle handheld movement, extremely shallow depth of field on the material texture"},
+                    {"shot": "Shot 4: Push-In Entrance (8 Detik)", "cam": "Smooth gimbal push-in, moving steadily towards the main entrance, inviting perspective"},
+                    {"shot": "Shot 5: Interior/Atmosphere Pan (8 Detik)", "cam": "Slow cinematic pan across the space, capturing volumetric light beams and dust motes in the air"}
+                ]
+                
+                for item in shot_list:
+                    st.markdown(f"**🎬 {item['shot']}**")
+                    # Menggabungkan prompt dasar dengan instruksi kamera spesifik per shot
+                    vid_prompt = f"[CINEMATIC VIDEO PROMPT] {item['cam']}, 24fps filmic look. {st.session_state.generated_prompt}"
+                    st.code(vid_prompt, language="markdown")
+                    
+            else:
+                # --- JIKA MODE GAMBAR (IMAGE) TETAP NORMAL ---
+                st.write("Klik ikon **Copy** di pojok kanan atas kotak ini, lalu *paste* ke chat AI pilihan Anda.")
+                st.code(st.session_state.generated_prompt, language="markdown")
+    
             
             if st.session_state.uploaded_sketch or st.session_state.use_ref:
                 st.warning("⚠️ **PENTING:** Karena Anda mengaktifkan *Vision Constraint* / *Color Masking*, pastikan Anda mengunggah gambar sketsa/masking tersebut secara manual ke chat AI bersamaan dengan prompt di atas!")
