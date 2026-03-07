@@ -314,11 +314,24 @@ with col_left:
     tab1, tab2, tab3, tab4 = st.tabs(["🏛️ Geometri & Material", "💡 Tata Cahaya", "🌍 Konteks Lingkungan", "📷 Sinema & Lensa"])
     
     with tab1:
-        st.markdown('<div class="section-title">📐 Geometry & Sketch Upload</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">📐 Geometry & Layer Upload</div>', unsafe_allow_html=True)
         
-        # --- TIMPA MULAI DARI SINI ---
-        uploaded_sketch_file = st.file_uploader("1️⃣ Upload Geometri (Z-Depth / Hidden Line)", type=["png", "jpg"], key="sketch_up")
+        st.info("💡 Untuk hasil fotorealistis absolut, unggah 3 peta dasar (The Holy Trinity) dari software BIM/SketchUp Anda.")
         
+        # 1. DEPTH MAP
+        uploaded_sketch_file = st.file_uploader("1️⃣ Upload Depth Map (Volume & Kedalaman)", type=["png", "jpg"], key="depth_up")
+        
+        # 2. NORMAL MAP
+        uploaded_normal_file = st.file_uploader("2️⃣ Upload Normal Map (Lekukan & Arah Cahaya)", type=["png", "jpg"], key="normal_up")
+        
+        # 3. SEMANTIC MASKING
+        use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
+        st.session_state.use_color_masking = use_masking
+
+        uploaded_mask_file = None 
+        if st.session_state.use_color_masking:
+            uploaded_mask_file = st.file_uploader("3️⃣ Upload Semantic Mask (Pemetaan Material)", type=["png", "jpg"], key="mask_up")
+            
         if uploaded_sketch_file is not None:
             try:
                 sketch_img = Image.open(uploaded_sketch_file)
@@ -494,60 +507,74 @@ with col_right:
                     st.warning("⚠️ Sketsa belum diunggah! ControlNet membutuhkan gambar dasar (sketsa CAD/BIM) di Tab 'Geometri & Material' untuk menjiplak garis.")
                 else:
                     with st.spinner("Memulai Orkestrasi Multi-ControlNet (Depth + Segmentation)..."):
+                        else:
+                    try:
                         try:
                             # 1. Daftarkan API Key ke environment
                             os.environ["REPLICATE_API_TOKEN"] = replicate_api_key
                             import replicate
                             
-                            # 2. Reset pointer file Streamlit agar bisa dibaca API
-                            uploaded_sketch_file.seek(0)
+                            # 2. Reset pointer file Streamlit agar bisa dibaca API (Anti-Crash)
+                            if uploaded_sketch_file: uploaded_sketch_file.seek(0)
                             
-                            # 3. Eksekusi API Berdasarkan Ketersediaan Masking
-                            if st.session_state.use_color_masking and 'uploaded_mask_file' in locals() and uploaded_mask_file is not None:
-                                uploaded_mask_file.seek(0)
+                            # Deteksi apakah Normal Map diunggah
+                            is_normal_active = 'uploaded_normal_file' in locals() and uploaded_normal_file is not None
+                            if is_normal_active: uploaded_normal_file.seek(0)
+                            
+                            # Deteksi apakah Semantic Masking aktif dan diunggah
+                            is_mask_active = st.session_state.get('use_color_masking', False) and 'uploaded_mask_file' in locals() and uploaded_mask_file is not None
+                            if is_mask_active: uploaded_mask_file.seek(0)
+                            
+                            # 3. Eksekusi API The Holy Trinity
+                            with st.spinner("Memulai Orkestrasi 'The Holy Trinity' (Depth + Normal + Segmentation)..."):
                                 
-                                # Menggunakan endpoint SDXL Multi-ControlNet (fofr)
+                                # Parameter Dasar Replicate
+                                rep_input = {
+                                    "prompt": st.session_state.generated_prompt + ", award-winning architectural photography, highly detailed, 8k, V-Ray render, global illumination",
+                                    "negative_prompt": "3d render, sketchup, lumion, cartoon, flat, wireframe, blueprint, plastic, illustration, CGI, overexposed, text, watermark",
+                                    "num_inference_steps": 40,
+                                    "guidance_scale": 4.5,
+                                    "scheduler": "K_EULER_ANCESTRAL",
+                                    
+                                    # 🎯 LAYER 1: DEPTH (Selalu aktif karena ini pondasi geometri)
+                                    "control_image_1": uploaded_sketch_file,
+                                    "controlnet_1": "depth", 
+                                    "controlnet_1_conditioning_scale": 0.45,
+                                }
+                                
+                                # 🪨 LAYER 2: NORMAL MAP (Opsional)
+                                if is_normal_active:
+                                    rep_input["control_image_2"] = uploaded_normal_file
+                                    rep_input["controlnet_2"] = "normal"
+                                    rep_input["controlnet_2_conditioning_scale"] = 0.60
+                                
+                                # 🎨 LAYER 3: SEMANTIC MASKING (Opsional)
+                                # Catatan: Jika Normal Map tidak ada, Masking akan menempati Layer 2
+                                if is_mask_active:
+                                    layer_idx = 3 if is_normal_active else 2
+                                    rep_input[f"control_image_{layer_idx}"] = uploaded_mask_file
+                                    rep_input[f"controlnet_{layer_idx}"] = "segmentation"
+                                    rep_input[f"controlnet_{layer_idx}_conditioning_scale"] = 0.85
+                                    
+                                # Jalankan Replicate dengan parameter yang sudah dirakit
                                 output = replicate.run(
                                     "fofr/sdxl-multi-controlnet:382b6826640cdd3fcba5a5960098df4478345c2f3ccf8c3caee547432d56a7bc",
-                                    input={
-                                        "prompt": st.session_state.generated_prompt + ", award-winning architectural photography, hyper-realistic, 8k, V-Ray render",
-                                        "negative_prompt": "3d render, sketchup, lumion, cartoon, flat, wireframe, blueprint, plastic, illustration, CGI, overexposed, text, watermark",
-                                        
-                                        # 🎯 CONTROLNET 1: PENGUNCI GEOMETRI (Depth)
-                                        "control_image_1": uploaded_sketch_file,
-                                        "controlnet_1": "depth", 
-                                        "controlnet_1_conditioning_scale": 0.75, 
-                                        
-                                        # 🎨 CONTROLNET 2: PEMETAAN MATERIAL (Semantic Segmentation)
-                                        "control_image_2": uploaded_mask_file,
-                                        "controlnet_2": "segmentation", 
-                                        "controlnet_2_conditioning_scale": 0.85, 
-                                        
-                                        # Parameter Fotorealisme
-                                        "num_inference_steps": 40, 
-                                        "guidance_scale": 4.5,     
-                                        "scheduler": "K_EULER_ANCESTRAL"
-                                    }
+                                    input=rep_input
                                 )
-                                st.success("✅ Multi-ControlNet Berhasil Mengeksekusi Geometri dan Material!")
                                 
-                            else:
-                                # Fallback jika pengguna tidak mengunggah Color Mask (Hanya Kunci Geometri)
-                                st.info("💡 Mode Single-ControlNet (Geometri Saja). Upload Color Mask untuk pemetaan material absolut.")
-                                output = replicate.run(
-                                    "fofr/sdxl-multi-controlnet:382b6826640cdd3fcba5a5960098df4478345c2f3ccf8c3caee547432d56a7bc",
-                                    input={
-                                        "prompt": st.session_state.generated_prompt + ", photorealistic architectural render",
-                                        "negative_prompt": "3d render, sketch, cartoon",
-                                        "control_image_1": uploaded_sketch_file,
-                                        "controlnet_1": "depth",
-                                        "controlnet_1_conditioning_scale": 0.8,
-                                    }
-                                )
-                            
                             # 4. Tampilkan Hasil
                             if output:
                                 final_image_url = str(output[0]) if isinstance(output, list) else str(output)
+                                
+                                # Notifikasi pintar berdasarkan seberapa banyak layer yang aktif
+                                if is_normal_active and is_mask_active:
+                                    st.success("✅ Holy Trinity Berhasil Dieksekusi! Fisika Cahaya dan Geometri Terkunci Sempurna.")
+                                elif is_normal_active or is_mask_active:
+                                    st.success("✅ Dual-ControlNet Berhasil Mengeksekusi Geometri dan Detail/Material!")
+                                else:
+                                    st.info("💡 Mode Single-ControlNet (Hanya Depth/Geometri). Upload Normal/Color Mask untuk detail absolut.")
+                                    st.success("✅ Render Geometri Berhasil!")
+                                    
                                 st.image(final_image_url, caption="Render Final Arsitektur", use_column_width=True)
                                 st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
                             else:
@@ -555,7 +582,7 @@ with col_right:
                                 
                         except Exception as e:
                             st.error(f"Terjadi kesalahan pada server Replicate: {e}")
-                
+                                        
                                                                                                                                                                             
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
