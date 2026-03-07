@@ -18,14 +18,14 @@ DB_MATERIAL = [
     "Eksterior Cat Dinding (Wall Paint / Stucco)",
     "Kayu Solid (Timber / Wood Panels)",
     "Kaca dan Aluminium (Glass & Aluminium Facade)",
-    "concrete, glass, and wood accents",
-    "white marble and gold trim", 
-    "exposed brick and steel",
-    "sustainable bamboo and stone", 
-    "reflective glass facade", 
-    "weathered corten steel",
-    "polished travertin stone",
-    "exposed terracotta brick, raw concrete, and warm timber wood"
+    "Beton Ekspos & Aksen Kayu (Exposed Concrete & Wood Accents)",
+    "Marmer Putih & Lis Emas (White Marble & Gold Trim)", 
+    "Bata Ekspos & Baja (Exposed Brick & Steel)",
+    "Bambu & Batu Alam (Sustainable Bamboo & Stone)", 
+    "Fasad Kaca Reflektif (Reflective Glass Facade)", 
+    "Baja Corten Berkarat (Weathered Corten Steel)",
+    "Batu Travertine Dipoles (Polished Travertine Stone)",
+    "Bata Terakota & Beton Mentah (Terracotta Brick & Raw Concrete)"
 ]
 
 DB_SUASANA = [
