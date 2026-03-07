@@ -485,26 +485,26 @@ with col_right:
                             # 2. Ambil file sketsa dari memori Streamlit
                             uploaded_sketch_file.seek(0)
                             
-                            # 3. Panggil Mesin SDXL Image-to-Image (Bukan ControlNet)
-                            # Mode ini SANGAT COCOK untuk input gambar SketchUp berwarna/berbayang
+                            # 3. Panggil Mesin FLUX.1 Canny (Raja Fotorealisme Saat Ini)
                             output = replicate.run(
-                                "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
+                                "black-forest-labs/flux-canny-dev",
                                 input={
-                                    "image": uploaded_sketch_file,
-                                    "prompt": st.session_state.generated_prompt + ", ultra photorealistic, V-Ray render, Unreal Engine 5, 8k resolution, architectural photography, highly detailed, realistic materials",
-                                    "negative_prompt": "cartoon, sketch, 3d render, dull, flat, low quality, sketchup, false colors, watermark",
-                                    "prompt_strength": 0.65, # 🛠️ KUNCI UTAMA: 65% Imajinasi AI (Fotorealistik), 35% Mempertahankan bentuk SketchUp Kakak
-                                    "num_inference_steps": 40
+                                    "control_image": uploaded_sketch_file,
+                                    "prompt": st.session_state.generated_prompt + ", hyper-realistic architectural photography, extremely detailed, V-Ray render, Unreal Engine 5, 8k resolution, cinematic lighting, lush environment, photorealistic",
+                                    "output_format": "jpg",
+                                    "megapixels": "1",
+                                    "steps": 30,             # Biarkan AI memasak tekstur lebih lama
+                                    "guidance": 3.5,         # 🛠️ KUNCI 1: Harus 3.5! Ini adalah tombol pengaktif "Otak Fotorealistik" FLUX.
+                                    "control_weight": 0.55   # 🛠️ KUNCI 2: Kita setel ke 55% saja! AI akan mempertahankan bentuk bangunan Kakak, tapi berani MENGHAPUS garis hitam/warna kartun SketchUp dan menimpanya dengan aspal & material asli!
                                 }
                             )
                             
-                            # 4. Tampilkan Hasil
+                            # 4. Tampilkan Hasil (Kebal Error)
                             if output:
-                                # SDXL mengembalikan list URL
                                 final_image_url = str(output[0]) if isinstance(output, list) else str(output)
                                 
-                                st.success("✅ Render SDXL Image-to-Image Selesai!")
-                                st.image(final_image_url, caption="Render Final SDXL (Kualitas Setara Imagen 4)", use_column_width=True)
+                                st.success("✅ Geometri terkunci & Render FLUX Selesai!")
+                                st.image(final_image_url, caption="Render Final FLUX Canny (Kualitas Imagen + Bentuk Presisi)", use_column_width=True)
                                 
                                 st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
                             else:
