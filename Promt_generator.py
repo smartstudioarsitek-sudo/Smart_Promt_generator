@@ -208,16 +208,37 @@ with col_left:
         if st.session_state.use_color_masking:
             st.info("💡 Pastikan Anda mengunggah gambar 'Color Mask' bersolusi tinggi dengan warna kontras di chat Gemini.")
             c1, c2 = st.columns(2)
+            
+            st.markdown("---")
+        st.session_state.use_color_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", value=st.session_state.use_color_masking)
+        if st.session_state.use_color_masking:
+            st.info("💡 Pastikan Anda mengunggah gambar 'Color Mask' bersolusi tinggi dengan warna kontras di chat AI.")
+            
+            c1, c2 = st.columns(2)
+            
+            # --- FUNGSI PEMBANTU UNTUK UI PBR ---
+            def pbr_selector(label, key_state):
+                # 1. Tampilkan Dropdown Bahasa Indonesia
+                pilihan_indo = st.selectbox(label, db.LIST_MATERIAL_PBR, key=f"sel_{key_state}")
+                
+                # 2. Jika user pilih "Kustom", munculkan text_input biasa
+                if pilihan_indo == "Kustom (Ketik Manual)":
+                     st.session_state[key_state] = st.text_input(f"Ketik instruksi PBR untuk {label}:", value=st.session_state.get(key_state, ""))
+                else:
+                    # 3. Jika pilih dari daftar, simpan mantra Inggrisnya secara diam-diam
+                    st.session_state[key_state] = db.KAMUS_PBR[pilihan_indo]
+                    
             with c1:
-                st.session_state.mask_red = st.text_input("🔴 Merah (Red Zone):", value=st.session_state.mask_red)
-                st.session_state.mask_green = st.text_input("🟢 Hijau (Green Zone):", value=st.session_state.mask_green)
-                st.session_state.mask_purple = st.text_input("🟣 Ungu (Purple Zone):", value=st.session_state.mask_purple)
-                st.session_state.mask_cyan = st.text_input("🩵 Cyan (Cyan Zone):", value=st.session_state.mask_cyan)
+                pbr_selector("🔴 Merah (Red Zone)", "mask_red")
+                pbr_selector("🟢 Hijau (Green Zone)", "mask_green")
+                pbr_selector("🟣 Ungu (Purple Zone)", "mask_purple")
+                pbr_selector("🩵 Cyan (Cyan Zone)", "mask_cyan")
             with c2:
-                st.session_state.mask_blue = st.text_input("🔵 Biru (Blue Zone):", value=st.session_state.mask_blue)
-                st.session_state.mask_yellow = st.text_input("🟡 Kuning (Yellow Zone):", value=st.session_state.mask_yellow)
-                st.session_state.mask_orange = st.text_input("🟠 Oranye (Orange Zone):", value=st.session_state.mask_orange)
-                st.session_state.mask_magenta = st.text_input("🩷 Magenta (Magenta Zone):", value=st.session_state.mask_magenta)
+                pbr_selector("🔵 Biru (Blue Zone)", "mask_blue")
+                pbr_selector("🟡 Kuning (Yellow Zone)", "mask_yellow")
+                pbr_selector("🟠 Oranye (Orange Zone)", "mask_orange")
+                pbr_selector("🩷 Magenta (Magenta Zone)", "mask_magenta")
+            
                         
         st.markdown("---")
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
