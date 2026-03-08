@@ -545,61 +545,45 @@ with col_right:
                 else:
                     try:
                         import replicate
-                        
-                        # [KUNCI FIX]: Gunakan pemanggilan Client secara eksplisit, jangan pakai os.environ!
                         rep_client = replicate.Client(api_token=replicate_api_key)
                         
                         # Ambil gambar Depth Map buatan AI Lokal dari memori
                         depth_ai_file = st.session_state.get('auto_depth_file')
-                        if depth_ai_file: depth_ai_file.seek(0)
                         
-                        # Deteksi Semantic Masking
-                        is_mask_active = st.session_state.get('use_color_masking', False) and 'uploaded_mask_file' in locals() and uploaded_mask_file is not None
-                        if is_mask_active: uploaded_mask_file.seek(0)
-                        
-                        with st.spinner("Memulai Orkestrasi (Auto-Depth + Segmentation)..."):
-                            
-                            rep_input = {
-                                "prompt": st.session_state.generated_prompt + ", award-winning architectural photography, highly detailed, 8k, V-Ray render, global illumination",
-                                "negative_prompt": "3d render, sketchup, lumion, cartoon, flat, wireframe, blueprint, plastic, illustration, CGI, overexposed, text, watermark",
-                                "num_inference_steps": 40,
-                                "guidance_scale": 4.5,
-                                "scheduler": "K_EULER_ANCESTRAL",
-                                
-                                # 🎯 LAYER 1: DEPTH (Memakai hasil ekstraksi AI Lokal)
-                                "control_image_1": depth_ai_file,
-                                "controlnet_1": "depth", 
-                                "controlnet_1_conditioning_scale": 0.55, # Diberi bobot 55%
-                            }
-                            
-                            # 🎨 LAYER 2: SEMANTIC MASKING (Opsional)
-                            if is_mask_active:
-                                rep_input["control_image_2"] = uploaded_mask_file
-                                rep_input["controlnet_2"] = "segmentation"
-                                rep_input["controlnet_2_conditioning_scale"] = 0.85
-                                
-                            # EKSEKUSI MENGGUNAKAN CLIENT EKSPLISIT KITA (Auto-Latest Version)
-                            output = rep_client.run(
-                                "fofr/sdxl-multi-controlnet",
-                                input=rep_input
-                            )
-                                                        
-                        if output:
-                            final_image_url = str(output[0]) if isinstance(output, list) else str(output)
-                            
-                            if is_mask_active:
-                                st.success("✅ Dual-ControlNet Berhasil! Geometri dan Material terkunci.")
-                            else:
-                                st.success("✅ Auto-Depth Render Berhasil!")
-                                
-                            st.image(final_image_url, caption="Render Final Arsitektur", use_column_width=True)
-                            st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
+                        if not depth_ai_file:
+                            st.warning("⚠️ Menunggu AI Lokal membuat Depth Map. Silakan upload ulang gambar di Tab Geometri.")
                         else:
-                            st.error("Gagal mengekstrak gambar dari server.")
+                            depth_ai_file.seek(0)
+                            
+                            with st.spinner("Memulai Render Arsitektur (Engine: Lucataco SDXL Depth)..."):
+                                
+                                # Menggunakan model yang TERBUKTI JALAN di dashboard Kakak
+                                output = rep_client.run(
+                                    "lucataco/sdxl-controlnet",
+                                    input={
+                                        "prompt": st.session_state.generated_prompt + ", award-winning architectural photography, highly detailed, 8k, V-Ray render, global illumination",
+                                        "negative_prompt": "3d render, sketchup, lumion, cartoon, flat, wireframe, blueprint, plastic, illustration, CGI, overexposed, text, watermark",
+                                        
+                                        # Parameter khusus model Lucataco
+                                        "image": depth_ai_file, 
+                                        "controlnet": "depth", 
+                                        "condition_scale": 0.65, # Bobot geometri (65%)
+                                        "num_inference_steps": 40,
+                                        "scheduler": "K_EULER_ANCESTRAL"
+                                    }
+                                )
+                                
+                            if output:
+                                final_image_url = str(output[0]) if isinstance(output, list) else str(output)
+                                st.success("✅ Render Berhasil dengan Engine SDXL ControlNet!")
+                                st.image(final_image_url, caption="Render Final Arsitektur (Auto-Depth)", use_column_width=True)
+                                st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
+                            else:
+                                st.error("Gagal mengekstrak gambar dari server.")
                             
                     except Exception as e:
                         st.error(f"Terjadi kesalahan pada server Replicate: {e}")
-                                                                          
+                                                                                              
                                                                                                                                                                             
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
