@@ -78,12 +78,12 @@ LIST_MATERIAL_PBR = list(KAMUS_PBR.keys())
 @st.cache_resource(show_spinner=False)
 def load_depth_estimator():
     """
-    Memuat model MiDaS ke dalam RAM secara permanen agar proses selanjutnya instan.
-    Menggunakan model 'Small' agar Streamlit Cloud tidak kehabisan memori.
+    Memuat model GLPN (Global-Local Path Network) secara permanen.
+    Sangat ringan (~200MB), tanpa token, dan sangat akurat untuk arsitektur.
     """
     from transformers import pipeline
-    # Mengunduh model AI pembuat Depth Map berukuran kecil (~100MB)
-    estimator = pipeline("depth-estimation", model="Intel/dpt-small")
+    # Mengunduh model AI pembuat Depth Map
+    estimator = pipeline("depth-estimation", model="vinvino02/glpn-nyu")
     return estimator
 
 def generate_auto_depth_map(image_input):
@@ -97,6 +97,7 @@ def generate_auto_depth_map(image_input):
     except Exception as e:
         st.error(f"Gagal memproses Auto-Depth: {e}")
         return None
+
 # ==========================================
 # 1. KONFIGURASI KEAMANAN & API
 # ==========================================
