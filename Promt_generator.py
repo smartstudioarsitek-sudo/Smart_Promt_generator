@@ -312,10 +312,8 @@ with col_left:
     st.markdown("---")
     
     tab1, tab2, tab3, tab4 = st.tabs(["🏛️ Geometri & Material", "💡 Tata Cahaya", "🌍 Konteks Lingkungan", "📷 Sinema & Lensa"])
-    
     with tab1:
         st.markdown('<div class="section-title">📐 Geometry & Layer Upload</div>', unsafe_allow_html=True)
-        
         st.info("💡 Untuk hasil fotorealistis absolut, unggah 3 peta dasar (The Holy Trinity) dari software BIM/SketchUp Anda.")
         
         # 1. DEPTH MAP
@@ -324,18 +322,10 @@ with col_left:
         # 2. NORMAL MAP
         uploaded_normal_file = st.file_uploader("2️⃣ Upload Normal Map (Lekukan & Arah Cahaya)", type=["png", "jpg"], key="normal_up")
         
-        # 3. SEMANTIC MASKING
-        use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
-        st.session_state.use_color_masking = use_masking
-
-        uploaded_mask_file = None 
-        if st.session_state.use_color_masking:
-            uploaded_mask_file = st.file_uploader("3️⃣ Upload Semantic Mask (Pemetaan Material)", type=["png", "jpg"], key="mask_up")
-            
         if uploaded_sketch_file is not None:
             try:
                 sketch_img = Image.open(uploaded_sketch_file)
-                st.image(sketch_img, caption="Preview Geometri Struktural", use_column_width=True) 
+                st.image(sketch_img, caption="Preview Depth Map / Geometri", use_column_width=True) 
                 st.session_state.uploaded_sketch = True
                 st.success("✅ Geometri terdeteksi! 'Vision Constraint' aktif.")
                 st.session_state.ai_control = st.selectbox("Metode Restriksi Struktural AI (Lapisan 2):", db.DB_AI_CONTROL, index=db.DB_AI_CONTROL.index(st.session_state.ai_control)) 
@@ -346,15 +336,14 @@ with col_left:
             st.session_state.uploaded_sketch = None
             
         st.markdown("---")
+        
+        # 3. SEMANTIC MASKING (Diperbaiki agar tidak dobel)
         use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
         st.session_state.use_color_masking = use_masking
 
-        # Inisialisasi variabel kosong agar tidak error jika checkbox dimatikan
         uploaded_mask_file = None 
-
         if st.session_state.use_color_masking:
-            # Kolom upload ke-2 muncul jika checkbox diaktifkan
-            uploaded_mask_file = st.file_uploader("2️⃣ Upload Semantic Color Mask (Warna Material)", type=["png", "jpg"], key="mask_up")
+            uploaded_mask_file = st.file_uploader("3️⃣ Upload Semantic Mask (Pemetaan Material)", type=["png", "jpg"], key="mask_up")
             
             if uploaded_mask_file is not None:
                 try:
@@ -364,8 +353,6 @@ with col_left:
                     st.error("❌ File mask bukan gambar yang valid.")
 
             st.info("💡 Pilih material dalam bahasa Indonesia. Aplikasi akan otomatis merakit mantra 3D/PBR bahasa Inggris ke dalam prompt.")
-            # --- TIMPA BERAKHIR SAMPAI DI SINI (Lanjutkan ke c1, c2 kolom material) ---
-                       
             c1, c2 = st.columns(2)
             
             def pbr_selector(label, key_state):
@@ -401,7 +388,7 @@ with col_left:
         st.session_state.material = st.selectbox("Material Dasar Lingkungan (Base Material)", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
         st.session_state.weathering = st.selectbox("Kondisi Fisik / Keausan Material", db.DB_WEATHERING, index=db.DB_WEATHERING.index(st.session_state.weathering))
         st.session_state.detail = st.text_area("Detail Spesifik Khusus (Struktur/Bentuk)", value=st.session_state.detail, height=80)
-
+    
     with tab2:
         st.session_state.temp_warna = st.selectbox("Suhu Warna Lampu (Kelvin)", db.DB_TEMP_WARNA, index=db.DB_TEMP_WARNA.index(st.session_state.temp_warna))
         meta_flag = getattr(db, 'DB_VIEW_FLAGS', {}).get(st.session_state.view, {})
