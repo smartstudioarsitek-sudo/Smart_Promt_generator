@@ -527,22 +527,30 @@ with col_right:
         if not HAS_CANVAS:
             st.error("🚨 Pustaka `streamlit-drawable-canvas` belum terdeteksi. Silakan install via terminal: `pip install streamlit-drawable-canvas`")
         else:
-            # Tambahkan type file spesifik agar format aneh seperti jfif bisa terbaca lancar
             base_img_file = st.file_uploader("🖼️ Unggah Gambar Base Render", type=["png", "jpg", "jpeg", "jfif", "webp"], key="inpaint_upload")
             
             if base_img_file is not None:
                 try:
-                    # 1. Buka gambar dan LANGSUNG pastikan formatnya RGBA (Wajib untuk Canvas)
-                    temp_img = Image.open(base_img_file).convert("RGBA")
+                    # 1. BACA GAMBAR
+                    temp_img = Image.open(base_img_file)
                     
-                    # 2. Resize gambar agar pas di layar UI dan tidak membuat server hang
+                    # 2. RESIZE AGAR UI TIDAK BERAT
                     max_width_ui = 600
                     if temp_img.width > max_width_ui:
                         ratio = max_width_ui / float(temp_img.width)
                         new_height = int(temp_img.height * ratio)
-                        base_image_resized = temp_img.resize((max_width_ui, new_height), Image.Resampling.LANCZOS)
+                        ui_img = temp_img.resize((max_width_ui, new_height), Image.Resampling.LANCZOS)
                     else:
-                        base_image_resized = temp_img
+                        ui_img = temp_img
+
+                    # 3. KUNCI ANTI-BLANK: CUCI BERSIH GAMBAR KE FORMAT PNG MURNI (RGBA)
+                    # Ini akan membuang semua metadata .jfif/.webp yang membuat layar menjadi putih
+                    clean_io = io.BytesIO()
+                    ui_img.save(clean_io, format="PNG")
+                    clean_io.seek(0)
+                    
+                    # Buka kembali sebagai gambar murni yang siap disajikan ke Canvas
+                    base_image_resized = Image.open(clean_io).convert("RGBA")
 
                     st.markdown("**1. Lukis Area Masking**")
             
@@ -552,9 +560,8 @@ with col_right:
                         st.caption("Gunakan kuas untuk menutupi area yang ingin diubah. Area yang diwarnai putih akan diproses oleh AI.")
                     
                     with col_canvas:
-                        # --- KUNCI FIX BLANK CANVAS ---
-                        # Kita gunakan file_id unik agar Canvas dipaksa me-refresh gambar latar belakang!
-                        canvas_key = f"canvas_inpainting_{base_img_file.file_id}"
+                        # Kunci dinamis agar kanvas selalu refresh jika gambar diganti
+                        canvas_key = f"canvas_{base_img_file.name}_{base_img_file.size}"
                         
                         canvas_result = st_canvas(
                             fill_color="rgba(255, 255, 255, 0.7)", 
@@ -565,7 +572,7 @@ with col_right:
                             height=base_image_resized.height,
                             width=base_image_resized.width,
                             drawing_mode="freedraw",
-                            key=canvas_key, # 👈 Key dinamis bekerja di sini
+                            key=canvas_key,
                         )
                     
                     st.markdown("---")
@@ -577,14 +584,14 @@ with col_right:
                             if micro_prompt:
                                 with st.spinner("Mengirim masker dan instruksi ke Google AI (Inpainting)..."):
                                     try:
-                                        # Buat Topeng Hitam-Putih
+                                        # Rakit Masking Hitam-Putih
                                         mask_array = np.zeros((base_image_resized.height, base_image_resized.width), dtype=np.uint8)
                                         mask_array[canvas_result.image_data[:, :, 3] > 0] = 255
                                         mask_image = Image.fromarray(mask_array, mode="L")
                                         
                                         base_rgb = base_image_resized.convert("RGB")
                                         
-                                        # Eksekusi Imagen 3.0 (Perbaikan Versi)
+                                        # Panggil Imagen API
                                         result = client.models.edit_images(
                                             model='imagen-3.0-generate-001',
                                             prompt=micro_prompt,
@@ -599,9 +606,7 @@ with col_right:
                                         
                                         st.success("✅ Revisi Selesai! (Aturan 'The One Edit Rule' berhasil diterapkan)")
                                         
-                                        # Tampilkan Hasil
                                         for generated_image in result.generated_images:
-                                            import io
                                             edited_img = Image.open(io.BytesIO(generated_image.image.image_bytes))
                                             
                                             col_res1, col_res2 = st.columns(2)
@@ -630,6 +635,7 @@ with col_right:
                             st.warning("⚠️ Anda belum melukis area masking di atas gambar. Gunakan kuas untuk menandai area yang ingin diubah.")
                 except Exception as e:
                      st.error(f"❌ File gagal diproses. Detail: {e}")
+    
     
     with tab_upscale:
         st.markdown("### 🔍 Ultra HD Upscaler (4K/8K)")
