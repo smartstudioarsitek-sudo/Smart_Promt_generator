@@ -338,15 +338,15 @@ with col_left:
     
     tab1, tab2, tab3, tab4 = st.tabs(["🏛️ Geometri & Material", "💡 Tata Cahaya", "🌍 Konteks Lingkungan", "📷 Sinema & Lensa"])
     with tab1:
-        st.markdown('<div class="section-title">📐 Geometry & Standar Operasional (SOP)</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">📐 Geometry & Auto-Depth AI</div>', unsafe_allow_html=True)
         
-        # --- KOTAK SOP UNTUK USER ---
+        # --- KOTAK SOP UNTUK USER (WAJIB DIBACA) ---
         st.warning("""
-        **⚠️ SOP UPLOAD SKETSA (WAJIB DIBACA AGAR HASIL FOTOREALISTIS):**
+        **⚠️ SOP UPLOAD SKETSA (BACA AGAR HASIL FOTOREALISTIS):**
         1. **Nyalakan Bayangan:** Di SketchUp/Revit, WAJIB nyalakan fitur *Shadows* (Bayangan matahari tipis) agar AI memahami kedalaman fasad.
         2. **Gaya Visual:** Gunakan mode *Shaded with Edges* atau *Hidden Line*. Pastikan garis bangunan terlihat tajam.
         3. **Bersihkan Layar:** Sembunyikan garis bantu (axis), teks dimensi, atau orang 2D bawaan SketchUp. AI akan mengira itu bagian dari struktur.
-        4. **Sudut Kamera:** Gunakan mode *Perspective* (Kamera manusia/mata burung), hindari *Parallel Projection* yang kaku.
+        4. **Sudut Kamera:** Gunakan mode *Perspective* (Kamera manusia), hindari mode *Parallel Projection* yang kaku.
         """)
         # ----------------------------
 
@@ -357,22 +357,22 @@ with col_left:
             raw_img = Image.open(uploaded_raw_image).convert("RGB")
             st.session_state.uploaded_sketch = True 
             
-            # Tampilkan preview gambar
-            st.image(raw_img, caption="Preview Gambar Input", use_column_width=True)
+            # Tampilkan preview gambar asli user (Tanpa Auto-Depth yang bikin buram)
+            st.image(raw_img, caption="1. Gambar Asli (Input)", use_column_width=True)
             
-            # Bungkus gambar asli langsung untuk dikirim ke Canny (Tanpa Auto-Depth yang bikin buram)
+            # Bungkus gambar asli langsung untuk dikirim ke Canny (Anti-Depth yang bikin buram)
             import io
             img_bytes = io.BytesIO()
             raw_img.save(img_bytes, format='PNG')
             img_bytes.seek(0)
+            
             st.session_state.canny_ready_file = img_bytes
             
         else:
             st.session_state.uploaded_sketch = None
 
         st.markdown("---")
-        # ... (Kode Semantic Masking dan pilihan dropdown Material biarkan seperti semula)
-    
+       
     
         
         # 2. SEMANTIC MASKING (Opsional)
@@ -535,7 +535,7 @@ with col_right:
                         import replicate
                         rep_client = replicate.Client(api_token=replicate_api_key)
                         
-                        # Ambil file gambar asli yang sudah disiapkan di Tab 1
+                        # Ambil file gambar asli user dari memori
                         canny_file = st.session_state.get('canny_ready_file')
                         
                         if not canny_file:
@@ -543,12 +543,12 @@ with col_right:
                         else:
                             canny_file.seek(0)
                             
-                            with st.spinner("Memulai Render ArchViz Presisi Tinggi (Engine: FLUX.1 Canny)..."):
+                            with st.spinner("Memulai Render Presisi (Engine Utama: FLUX.1 Canny)..."):
                                 
                                 # --- THE SECRET SAUCE: MASTER PROMPT INJECTION ---
                                 # Kita paksa AI menambahkan elemen fotorealistis mutlak di luar prompt user
                                 master_prompt = (
-                                    "Breathtaking architectural exterior photography, masterpiece of modern architecture. "
+                                    "Breathtaking architectural exterior photography, master-piece of modern architecture. "
                                     f"{st.session_state.generated_prompt}. "
                                     "Hyper-realistic environment, post-rain wet ground with subtle reflections, "
                                     "dramatic ambient sunlight, lush and highly detailed landscaping, 8k resolution, "
@@ -560,9 +560,9 @@ with col_right:
                                     input={
                                         "prompt": master_prompt,
                                         "control_image": canny_file, 
-                                        "num_inference_steps": 40,  # Langkah komputasi maksimal untuk detail
-                                        "guidance": 15.0,           # Kepatuhan sangat tinggi pada Master Prompt
-                                        "control_strength": 0.65    # KUNCI UTAMA: Diturunkan dari 0.85 agar AI tidak kaku dan berani memberi tekstur
+                                        "num_inference_steps": 40,  # Langkah maksimal untuk detail
+                                        "guidance": 15.0,           # Kepatuhan sangat tinggi pada prompt visual
+                                        "control_strength": 0.65    # KUNCI UTAMA: Diturunkan agar AI tidak kaku dan berani memberi tekstur/efek
                                     }
                                 )
                                 
@@ -576,7 +576,7 @@ with col_right:
                             
                     except Exception as e:
                         st.error(f"Terjadi kesalahan pada server Replicate: {e}")
-                                                                                                                                      
+                                                                                                                                                          
                                                                                                                                                                             
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
