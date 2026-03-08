@@ -525,31 +525,31 @@ with col_right:
         st.info("Unggah gambar hasil render final Anda (dari Gemini/Midjourney/API), lalu 'lukis' area yang ingin direvisi.")
         
         if not HAS_CANVAS:
-            st.error("🚨 Pustaka `streamlit-drawable-canvas` belum terdeteksi. Silakan install via terminal: `pip install streamlit-drawable-canvas`")
+            st.error("🚨 Pustaka `streamlit-drawable-canvas` belum terdeteksi. Silakan install via terminal: `pip install streamlit-drawable-canvas==0.9.0`")
         else:
             base_img_file = st.file_uploader("🖼️ Unggah Gambar Base Render", type=["png", "jpg", "jpeg", "jfif", "webp"], key="inpaint_upload")
             
             if base_img_file is not None:
-                # --- LOGIKA MEMORI YANG BENAR (BEBAS BUG) ---
-                # Gunakan file_id untuk mendeteksi apakah Kakak mengunggah file baru
+                # --- LOGIKA MEMORI YANG DIAMANKAN ---
                 if "last_file_id" not in st.session_state or st.session_state.last_file_id != base_img_file.file_id:
                     try:
-                        # 1. Buka gambar dan ubah ke RGBA (Wajib untuk Kanvas)
-                        raw_img = Image.open(base_img_file).convert("RGBA")
+                        # 1. PIPA NORMALISASI: Buka dan paksa konversi ke RGB murni
+                        # Mensterilkan residu kompresi anomali alfa/JFIF
+                        raw_img = Image.open(base_img_file).convert("RGB")
                         
-                        # 2. Resize dengan metode Thumbnail (Paling aman untuk memori)
+                        # 2. EVALUASI BOUNDS: Resize proporsional (Dynamic scale proportion)
                         raw_img.thumbnail((700, 700), Image.Resampling.LANCZOS)
                         
-                        # 3. KUNCI MUTLAK: Gunakan .copy() agar gambar tidak dihapus oleh Python
+                        # 3. KUNCI MUTLAK: Gunakan .copy() agar memori terisolasi
                         st.session_state.inpaint_bg = raw_img.copy()
-                        
-                        # 4. Catat ID file agar tidak diproses berulang-ulang
                         st.session_state.last_file_id = base_img_file.file_id
-                        st.session_state.canvas_key = f"canvas_{base_img_file.file_id}"
+                        
+                        # 4. FIKSASI KEY STATIS: Mencegah komponen React me-render ulang tanpa henti
+                        st.session_state.canvas_key = "canvas_session_stable"
                     except Exception as e:
-                        st.error(f"❌ Gagal memproses gambar: {e}")
+                        st.error(f"❌ Gagal memproses aliran gambar: {e}")
                 
-                # --- RENDER KANVAS DARI STATE YANG SUDAH AMAN ---
+                # --- RENDER KANVAS ---
                 if "inpaint_bg" in st.session_state:
                     bg_img = st.session_state.inpaint_bg
                     
@@ -562,84 +562,24 @@ with col_right:
                         
                         st.markdown("---")
                         if st.button("🗑️ Reset Kanvas", use_container_width=True):
-                            # Trik mereset kanvas adalah mengganti key-nya
-                            st.session_state.canvas_key = f"canvas_reset_{random.randint(1, 1000)}"
+                            # Jika user mereset, kita izinkan mutasi key sementara, 
+                            # namun key utama tetap stabil saat unggah awal.
+                            st.session_state.canvas_key = f"canvas_session_reset_{random.randint(1, 1000)}"
                             st.rerun()
                     
                     with col_canvas:
-                        # Kanvas sekarang pasti membaca gambar karena menggunakan variabel statis
                         canvas_result = st_canvas(
                             fill_color="rgba(255, 255, 255, 0.7)", 
                             stroke_width=stroke_width,
                             stroke_color="#FFFFFF", 
                             background_image=bg_img, 
                             update_streamlit=True,
-                            height=bg_img.height, 
-                            width=bg_img.width,   
+                            height=bg_img.height, # Sinkronisasi dimensi absolut
+                            width=bg_img.width,   # Sinkronisasi dimensi absolut
                             drawing_mode="freedraw",
                             key=st.session_state.canvas_key,
                         )
-                    
-                    st.markdown("---")
-                    st.markdown("**2. Instruksi Mikro (The One Edit Rule)**")
-                    micro_prompt = st.text_input("Contoh: 'Change the wall paint to dark green' atau 'Add a modern leather sofa'", max_chars=200)
-                    
-                    if st.button("✨ Eksekusi Revisi", type="primary", use_container_width=True):
-                        if canvas_result.image_data is not None and np.any(canvas_result.image_data[:, :, 3] > 0):
-                            if micro_prompt:
-                                with st.spinner("Mengirim masker dan instruksi ke Google AI (Inpainting)..."):
-                                    try:
-                                        # Rakit Topeng Hitam Putih
-                                        mask_array = np.zeros((bg_img.height, bg_img.width), dtype=np.uint8)
-                                        mask_array[canvas_result.image_data[:, :, 3] > 0] = 255
-                                        mask_image = Image.fromarray(mask_array, mode="L")
-                                        
-                                        # Base Image dikembalikan ke RGB untuk dikirim ke Google
-                                        base_rgb = bg_img.convert("RGB")
-                                        
-                                        # Panggil Google Imagen 3
-                                        result = client.models.edit_images(
-                                            model='imagen-3.0-generate-001',
-                                            prompt=micro_prompt,
-                                            base_image=base_rgb,
-                                            mask_image=mask_image,
-                                            config=types.EditImagesConfig(
-                                                number_of_images=1,
-                                                output_mime_type="image/jpeg",
-                                                edit_mode="INPAINTING_INSERT" 
-                                            )
-                                        )
-                                        
-                                        st.success("✅ Revisi Selesai! (Aturan 'The One Edit Rule' berhasil diterapkan)")
-                                        
-                                        for generated_image in result.generated_images:
-                                            import io
-                                            edited_img = Image.open(io.BytesIO(generated_image.image.image_bytes))
-                                            
-                                            col_res1, col_res2 = st.columns(2)
-                                            with col_res1:
-                                                st.image(base_rgb, caption="Gambar Asli (Sebelum)", use_column_width=True)
-                                            with col_res2:
-                                                st.image(edited_img, caption=f"Hasil Revisi: {micro_prompt}", use_column_width=True)
-                                                
-                                            buf = io.BytesIO()
-                                            edited_img.save(buf, format="JPEG")
-                                            byte_im = buf.getvalue()
-                                            st.download_button(
-                                                label="💾 Unduh Hasil Revisi",
-                                                data=byte_im,
-                                                file_name="Revisi_Inpainting.jpg",
-                                                mime="image/jpeg",
-                                                use_container_width=True
-                                            )
-                                            
-                                    except Exception as e:
-                                        st.error(f"Gagal memproses revisi inpainting: {e}")
-                            else:
-                                st.warning("Mohon ketik Instruksi Mikro terlebih dahulu (Misal: 'Change to wood material').")
-                        else:
-                            st.warning("⚠️ Anda belum melukis area masking di atas gambar. Gunakan kuas untuk menandai area yang ingin diubah.")
-    
+       
     
     with tab_upscale:
         st.markdown("### 🔍 Ultra HD Upscaler (4K/8K)")
