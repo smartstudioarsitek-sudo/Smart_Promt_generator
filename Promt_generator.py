@@ -578,12 +578,12 @@ with col_right:
                                 rep_input["controlnet_2"] = "segmentation"
                                 rep_input["controlnet_2_conditioning_scale"] = 0.85
                                 
-                            # EKSEKUSI MENGGUNAKAN CLIENT EKSPLISIT KITA
+                            # EKSEKUSI MENGGUNAKAN CLIENT EKSPLISIT KITA (Auto-Latest Version)
                             output = rep_client.run(
-                                "fofr/sdxl-multi-controlnet:382b6826640cdd3fcba5a5960098df4478345c2f3ccf8c3caee547432d56a7bc",
+                                "fofr/sdxl-multi-controlnet",
                                 input=rep_input
                             )
-                            
+                                                        
                         if output:
                             final_image_url = str(output[0]) if isinstance(output, list) else str(output)
                             
