@@ -27,50 +27,48 @@ except ImportError:
 st.set_page_config(page_title="SmartBIM Engineex", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
-# 0. KAMUS PINTAR PBR (VERSI LENGKAP DARI DATABASE)
+# 0. KAMUS GLOBAL (PBR & CINEMATIC LIGHTING)
 # ==========================================
 KAMUS_PBR = {
-    # --- Beton ---
     "Beton Ekspos Halus": "Smooth architectural concrete, low roughness, soft specular reflection",
     "Beton Kasar / Bekisting": "Raw architectural concrete, high roughness, micro-displacement map, visible formwork tie-holes",
     "Beton Pracetak (Precast)": "Precast concrete panels, uniform texture, subtle edge chamfers, clean joints",
-    
-    # --- Kaca ---
     "Kaca Jernih": "Clear Architectural Glass, IOR 1.52, dielectric transmission, sharp specular",
     "Kaca Buram (Frosted)": "Frosted architectural glass, high roughness, IOR 1.45, blurred dielectric transmission",
     "Kaca Reflektif (Cermin)": "Highly reflective mirror glass, metallic workflow, sharp environmental reflections, IOR 2.0",
     "Kaca Berwarna (Tinted)": "Tinted architectural glass, subtle color absorption, dielectric transmission, IOR 1.52",
-    
-    # --- Kayu ---
     "Kayu Solid (Glossy)": "Polished solid timber, clear coat specular, visible wood grain normal map",
     "Kayu Natural (Matte)": "Natural raw wood timber, high roughness, diffuse scattering, prominent grain displacement",
     "Kayu Ulin / Eksterior": "Weathered ironwood, desaturated albedo, deep cracks normal map, matte finish",
-    
-    # --- Pasangan Bata & Batu ---
     "Bata Merah Natural": "Terracotta brickwork, matte albedo, pronounced bump map on mortar joints",
     "Bata Putih / Expose": "Painted white brickwork, subtle mortar depth, diffuse reflection, low specular",
     "Batu Andesit": "Rough Andesite Stone, natural displacement map, high frequency micro-bump, porous surface",
     "Batu Alam Palimanan": "Palimanan sandstone, warm albedo, high roughness, natural stratification bump map",
-    
-    # --- Logam (Metal) ---
     "Baja Struktural (Brushed)": "Brushed structural steel, metallic workflow, low albedo, anisotropic reflections, micro-scratches",
     "Aluminium Anodized": "Anodized aluminum frame, semi-rough metallic, uniform scatter, subtle edge highlights",
     "Baja Karat (Corten)": "Weathered Corten steel, deep orange-brown rust albedo, high roughness, patchy displacement",
     "Tembaga / Perunggu": "Patinated bronze/copper, metallic workflow, subtle green oxidation, variable roughness",
-    
-    # --- Pelapis Permukaan (Finishing) ---
     "Cat Eksterior (Putih/Warna)": "Clean exterior stucco paint, subtle noise texture, matte finish, soft global illumination scattering",
     "Marmer Polished": "Polished Marble, highly reflective, subtle clear coat specular, natural veining albedo",
     "Granit Flamed": "Flamed Granite paving, high roughness, crystalline micro-bump, diffuse scattering",
     "Keramik Matte": "Matte ceramic tiles, subtle grout lines, low specular, uniform albedo",
     "Keramik Glossy": "Glossy ceramic tiles, high specular, sharp reflections, clean grout normal map",
-    
-    # --- Lainnya ---
     "Aspal Jalan": "Rough asphalt road surface, high frequency noise displacement, low albedo, subtle specular on wet patches",
     "Rumput Sintetis": "Artificial turf grass, subsurface scattering, individual blade normal map, matte albedo",
-    "Kustom (Ketik Manual)": "" # Opsi fleksibel
+    "Kustom (Ketik Manual)": ""
 }
+LIST_MATERIAL_PBR = list(KAMUS_PBR.keys())
 
+KAMUS_LIGHTING = {
+    "☀️ Natural Daylight (Cerah & Bersih)": "clear bright natural daylight, crisp shadows, photorealistic, blue sky",
+    "🌅 Golden Hour (Senja Hangat & Mewah)": "golden hour lighting, warm sunlight, long soft shadows, cinematic sunset, glowing atmosphere",
+    "🌧️ Overcast/Rainy (Mendung Dramatis)": "overcast sky, moody dramatic lighting, soft diffused light, post-rain wet surfaces with puddles and subtle reflections",
+    "🌌 Blue Hour (Fajar/Senja Kebiruan)": "blue hour photography, twilight, cool ambient lighting, warm interior lights glowing through windows",
+    "🌃 Cinematic Night (Malam & Lampu Eksterior)": "night time architectural photography, cinematic artificial lighting, glowing exterior lights, deep shadows, stars in the sky",
+    "🚀 Cyberpunk Neon (Futuristik & Mencolok)": "cyberpunk style, vivid neon lights, dark background, sci-fi architectural lighting, dramatic contrast",
+    "📸 Studio Lighting (Pencahayaan Katalog)": "professional studio lighting, clean softbox illumination, neutral background, high contrast, sharp architectural details"
+}
+LIST_LIGHTING = list(KAMUS_LIGHTING.keys())
 
 # ==========================================
 # 1. KONFIGURASI KEAMANAN & API
@@ -104,7 +102,7 @@ with st.sidebar:
             st.stop()
 
 # ==========================================
-# 🛠️ PERBAIKAN PRIORITAS 4: MANAJEMEN STATE PERSISTEN
+# 🛠️ MANAJEMEN PRESET (LOAD & SAVE)
 # ==========================================
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -116,17 +114,8 @@ def load_custom_presets():
         try:
             with open(PRESET_FILE, "r") as f:
                 return json.load(f)
-        except json.JSONDecodeError as e:
-            logger.error(f"CRITICAL: File preset JSON rusak/corrupted. Detail: {e}")
-            st.error("🚨 Gagal memuat preset: Format file data preset rusak. Silakan periksa file JSON.")
-            return {}
-        except IOError as e:
-            logger.error(f"CRITICAL: Kesalahan I/O saat membaca file preset. Detail: {e}")
-            st.error("🚨 Gagal memuat preset: Akses sistem berkas ditolak atau tidak terbaca.")
-            return {}
         except Exception as e:
-            logger.error(f"CRITICAL: Kesalahan tak terduga saat memuat preset. Detail: {e}")
-            st.error("🚨 Kesalahan sistem yang tidak terduga saat memuat data profil.")
+            logger.error(f"Gagal memuat preset: {e}")
             return {}
     return {}
 
@@ -136,15 +125,9 @@ def save_custom_preset(name, data):
     try:
         with open(PRESET_FILE, "w") as f:
             json.dump(presets, f, indent=4)
-        logger.info(f"SUCCESS: Preset '{name}' berhasil diamankan ke penyimpanan.")
         return True
-    except IOError as e:
-        logger.error(f"FAIL: Gagal menulis ke sistem berkas lokal. Detail: {e}")
-        st.error(f"⚠️ Gagal menyimpan preset '{name}': Lingkungan Cloud saat ini bersifat 'ephemeral' (sementara) dan memblokir penulisan data permanen. Konfigurasi ini akan hilang saat aplikasi di-refresh.")
-        return False
     except Exception as e:
-        logger.error(f"FAIL: Kesalahan tak terduga saat menyimpan preset '{name}'. Detail: {e}")
-        st.error("⚠️ Terjadi kesalahan internal saat mencoba menyimpan profil Anda.")
+        logger.error(f"Gagal menyimpan preset: {e}")
         return False
 
 # ==========================================
@@ -168,20 +151,11 @@ if 'init' not in st.session_state:
     st.session_state.teknik_cahaya = db.DB_TEKNIK_CAHAYA[0]
     st.session_state.detail = ""
     st.session_state.weathering = db.DB_WEATHERING[0]
-    # --- KAMUS RAHASIA CINEMATIC LIGHTING ---
-        KAMUS_LIGHTING = {
-            "☀️ Natural Daylight (Cerah & Bersih)": "clear bright natural daylight, crisp shadows, photorealistic, blue sky",
-            "🌅 Golden Hour (Senja Hangat & Mewah)": "golden hour lighting, warm sunlight, long soft shadows, cinematic sunset, glowing atmosphere",
-            "🌧️ Overcast/Rainy (Mendung Dramatis)": "overcast sky, moody dramatic lighting, soft diffused light, post-rain wet surfaces with puddles and subtle reflections",
-            "🌌 Blue Hour (Fajar/Senja Kebiruan)": "blue hour photography, twilight, cool ambient lighting, warm interior lights glowing through windows",
-            "🌃 Cinematic Night (Malam & Lampu Eksterior)": "night time architectural photography, cinematic artificial lighting, glowing exterior lights, deep shadows, stars in the sky",
-            "🚀 Cyberpunk Neon (Futuristik & Mencolok)": "cyberpunk style, vivid neon lights, dark background, sci-fi architectural lighting, dramatic contrast",
-            "📸 Studio Lighting (Pencahayaan Katalog)": "professional studio lighting, clean softbox illumination, neutral background, high contrast, sharp architectural details"
-        }
-        LIST_LIGHTING = list(KAMUS_LIGHTING.keys())
-        
-        # Dropdown UI untuk User
-        st.session_state.lighting_mood = st.selectbox("Pencahayaan & Atmosfer (Lighting Mood)", LIST_LIGHTING)
+    
+    # State untuk Lighting & Image Weight
+    st.session_state.lighting_mood = LIST_LIGHTING[0]
+    st.session_state.image_weight = 0.6
+    
     st.session_state.kamera_film = db.DB_KAMERA_FILM[0]
     st.session_state.lensa_khusus = db.DB_LENSA_KHUSUS[0]
     st.session_state.tapak = db.DB_TAPAK[0]
@@ -278,7 +252,7 @@ st.markdown("""
 
 col_head1, col_head2 = st.columns([8, 2])
 with col_head1:
-    st.markdown('<div class="header-box"><div style="display:flex; flex-direction:column;"><h1 class="title-text">SmartBIM Engineex <span style="color:#4338ca">v2.1</span></h1><p class="subtitle-text">Enterprise Prompt Builder & Material ID Mapping</p></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-box"><div style="display:flex; flex-direction:column;"><h1 class="title-text">SmartBIM Engineex <span style="color:#4338ca">v2.1</span></h1><p class="subtitle-text">Enterprise Prompt Builder & Concept Generator</p></div></div>', unsafe_allow_html=True)
 with col_head2:
     st.write("") 
     if st.button("🔄 Acak Parameter", use_container_width=True):
@@ -336,20 +310,14 @@ with col_left:
             raw_img = Image.open(uploaded_raw_image).convert("RGB")
             st.image(raw_img, caption="Gambar Referensi Input", use_column_width=True)
             st.session_state.uploaded_sketch = True 
-            
-            # Simpan gambar ke memori untuk diakses Imagen nanti
             st.session_state.base_reference_image = raw_img
         else:
             st.session_state.uploaded_sketch = None
 
         st.markdown("---")
         
-        # --- FITUR MATERIAL PBR DIKEMBALIKAN ---
         st.markdown("### 🎨 Spesifikasi Material (PBR)")
-        st.info("💡 Pilih material untuk area bangunan. Aplikasi akan otomatis merakit deskripsi fotorealistis (English) ke dalam otak Imagen.")
-        
-        # 👇 INI DIA OBATNYA (Mendefinisikan LIST_MATERIAL_PBR otomatis dari KAMUS_PBR) 👇
-        LIST_MATERIAL_PBR = list(KAMUS_PBR.keys()) + ["Kustom (Ketik Manual)"]
+        st.info("💡 Pilih material untuk area bangunan. Aplikasi otomatis merakit deskripsi fotorealistis ke dalam otak AI.")
         
         c1, c2 = st.columns(2)
         
@@ -364,7 +332,7 @@ with col_left:
             pilihan_indo = st.selectbox(label, LIST_MATERIAL_PBR, index=LIST_MATERIAL_PBR.index(current_indo), key=f"sel_{key_state}")
             
             if pilihan_indo == "Kustom (Ketik Manual)":
-                st.session_state[key_state] = st.text_input(f"Ketik instruksi PBR (English) untuk {label}:", value=current_english, key=f"txt_{key_state}")
+                st.session_state[key_state] = st.text_input(f"Ketik instruksi PBR untuk {label}:", value=current_english, key=f"txt_{key_state}")
             else:
                 st.session_state[key_state] = KAMUS_PBR[pilihan_indo]
         
@@ -387,27 +355,25 @@ with col_left:
         st.session_state.gaya = st.selectbox("Gaya Arsitektur", db.DB_GAYA, index=db.DB_GAYA.index(st.session_state.gaya))
         st.session_state.material = st.selectbox("Material Dasar Lingkungan", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
         st.session_state.weathering = st.selectbox("Kondisi Fisik / Keausan", db.DB_WEATHERING, index=db.DB_WEATHERING.index(st.session_state.weathering))
+        
+        # Dropdown Cinematic Lighting
+        st.session_state.lighting_mood = st.selectbox("Pencahayaan & Atmosfer (Lighting Mood)", LIST_LIGHTING, index=LIST_LIGHTING.index(st.session_state.lighting_mood))
+        
         st.session_state.detail = st.text_area("Detail Spesifik Khusus", value=st.session_state.detail, height=80)
 
         st.markdown("---")
         st.markdown("### 🎛️ Kendali Kreativitas AI (Imagen Parameter)")
         
-        # Membuat Slider Interaktif
-        # Nilai 1.0 = Sangat kaku (mirip gambar asli)
-        # Nilai 0.1 = Sangat bebas (berhalusinasi / artistik)
         image_weight_slider = st.slider(
             "Tingkat Kepatuhan Geometri (Image Weight)",
             min_value=0.1,
             max_value=1.0,
-            value=0.6, # Default di tengah-tengah agak kaku
+            value=st.session_state.image_weight,
             step=0.1,
-            help="Geser mendekati 0.1 (Kreatif) agar AI bebas merombak bentuk. Geser mendekati 1.0 (Kaku) agar AI menjiplak bentuk asli Revit secara ketat."
+            help="Geser mendekati 0.1 (Kreatif) agar AI bebas merombak bentuk. Geser mendekati 1.0 (Kaku) agar AI menjiplak bentuk asli secara ketat."
         )
-        
-        # Simpan nilai ke memori agar bisa dibaca tombol Render nanti
         st.session_state.image_weight = image_weight_slider
         
-        # Visualisasi pintar di layar
         if image_weight_slider >= 0.8:
             st.info("📏 Mode Aktif: **Drafting Presisi**. Imagen akan menjiplak ketat bentuk geometri bangunan.")
         elif image_weight_slider <= 0.4:
@@ -426,59 +392,6 @@ with col_left:
             st.session_state.fixture_ext = st.selectbox("Exterior Lighting Fixtures", db.DB_FIXTURE_EXT, index=db.DB_FIXTURE_EXT.index(st.session_state.fixture_ext))
             
         st.session_state.teknik_cahaya = st.selectbox("Teknik Render Cahaya Tambahan", db.DB_TEKNIK_CAHAYA, index=db.DB_TEKNIK_CAHAYA.index(st.session_state.teknik_cahaya))
-        
-        st.markdown('<div class="section-title">🖼️ Hasil Render (Google Imagen)</div>', unsafe_allow_html=True)
-        
-        # --- TOMBOL RENDER BARU KHUSUS IMAGEN ---
-        if st.button("🚀 RENDER SKETSA (GOOGLE IMAGEN)", use_container_width=True, type="primary"):
-            
-            # 1. Validasi Keamanan: Cek apakah gambar dan prompt sudah ada
-            if not st.session_state.get('uploaded_sketch') or 'base_reference_image' not in st.session_state:
-                st.warning("⚠️ Silakan upload gambar referensi 3D di Tab 1 terlebih dahulu.")
-            elif not st.session_state.get('generated_prompt'):
-                st.warning("⚠️ Silakan klik tombol 'SUSUN PROMPT NEURAL' terlebih dahulu.")
-            else:
-                
-                # 2. Eksekusi Render
-                with st.spinner("✨ Google Imagen sedang melukis mahakarya arsitektur..."):
-                    try:
-                        # --- THE CINEMATIC INJECTOR ---
-                        # Mengambil terjemahan bahasa Inggris dari pilihan cuaca/lighting user
-                        cinematic_injector = KAMUS_LIGHTING[st.session_state.lighting_mood]
-                        
-                        # Merakit prompt akhir dengan kualitas V-Ray + Cuaca
-                        final_prompt = (
-                            f"Breathtaking architectural exterior photography, masterpiece of modern architecture. "
-                            f"{st.session_state.generated_prompt}. "
-                            f"Lighting and Atmosphere: {cinematic_injector}. " # 👈 SUNTIKAN CUACA BEKERJA DI SINI!
-                            f"Details: {st.session_state.detail}. "
-                            f"Shot on DSLR 35mm lens, 8k resolution, photorealistic textures, global illumination, V-Ray render."
-                        )
-                        
-                        # Mengambil data gambar dan slider dari Tab 1
-                        gambar_referensi = st.session_state.base_reference_image
-                        berat_slider = st.session_state.image_weight 
-                        
-                        # MENGHUBUNGI MESIN GOOGLE IMAGEN 3
-                        result = client.models.generate_images(
-                            model='imagen-3.0-generate-001',
-                            prompt=final_prompt,
-                            image=gambar_referensi,
-                            image_weight=berat_slider, 
-                            number_of_images=1,
-                            output_mime_type="image/jpeg"
-                        )
-                        
-                        # Menampilkan Gambar Hasil
-                        for generated_image in result.generated_images:
-                            import io
-                            final_img = Image.open(io.BytesIO(generated_image.image.image_bytes))
-                            
-                            st.success("✅ Render Berhasil! Google Imagen mengeksekusi visi Anda.")
-                            st.image(final_img, caption=f"Render Final (Cuaca: {st.session_state.lighting_mood} | Image Weight: {berat_slider})", use_column_width=True)
-                            
-                    except Exception as e:
-                        st.error(f"❌ Gagal memanggil server Google Imagen: {e}")
         
     with tab3:
         st.markdown('<div class="section-title">🌍 Site Context & Landscaping</div>', unsafe_allow_html=True)
@@ -532,7 +445,7 @@ with col_left:
 # KOLOM KANAN (OUTPUT & INPAINTING)
 # ==========================================
 with col_right:
-    tab_out, tab_inpaint, tab_upscale, tab_hist = st.tabs(["🖥️ Output", "🖌️ Inpainting", "🔍 4K Upscaler", "📚 Riwayat"])
+    tab_out, tab_inpaint, tab_upscale, tab_hist = st.tabs(["🖥️ Output & Render", "🖌️ Inpainting", "🔍 4K Upscaler", "📚 Riwayat"])
         
     with tab_out:
         if st.session_state.generated_prompt:
@@ -558,9 +471,52 @@ with col_right:
                 st.code(st.session_state.generated_prompt, language="markdown")
             
             if st.session_state.uploaded_sketch or st.session_state.use_ref:
-                st.warning("⚠️ **PENTING:** Karena Anda mengaktifkan *Vision Constraint* / *Color Masking*, pastikan Anda mengunggah gambar sketsa/masking tersebut secara manual ke chat AI bersamaan dengan prompt di atas!")
+                st.warning("⚠️ **PENTING:** Karena Anda mengaktifkan *Vision Constraint*, pastikan Anda mengunggah gambar sketsa/referensi secara manual ke chat AI bersamaan dengan prompt di atas!")
                 
-                                                                                                                                                                                                                                                                                                                                               
+            st.markdown("---")
+            st.markdown('<div class="section-title">🖼️ Hasil Render (Google Imagen via API)</div>', unsafe_allow_html=True)
+            
+            # --- TOMBOL RENDER BARU KHUSUS IMAGEN ---
+            if st.button("🚀 RENDER SKETSA (GOOGLE IMAGEN)", use_container_width=True, type="primary"):
+                if not st.session_state.get('uploaded_sketch') or 'base_reference_image' not in st.session_state:
+                    st.warning("⚠️ Silakan upload gambar referensi 3D di Tab 1 terlebih dahulu.")
+                else:
+                    with st.spinner("✨ Google Imagen sedang melukis mahakarya arsitektur..."):
+                        try:
+                            # Mengambil terjemahan bahasa Inggris dari pilihan cuaca/lighting user
+                            cinematic_injector = KAMUS_LIGHTING[st.session_state.lighting_mood]
+                            
+                            # Merakit prompt akhir dengan kualitas V-Ray + Cuaca
+                            final_prompt = (
+                                f"Breathtaking architectural exterior photography, masterpiece of modern architecture. "
+                                f"{st.session_state.generated_prompt}. "
+                                f"Lighting and Atmosphere: {cinematic_injector}. "
+                                f"Details: {st.session_state.detail}. "
+                                f"Shot on DSLR 35mm lens, 8k resolution, photorealistic textures, global illumination, V-Ray render."
+                            )
+                            
+                            gambar_referensi = st.session_state.base_reference_image
+                            berat_slider = st.session_state.image_weight 
+                            
+                            # MENGHUBUNGI MESIN GOOGLE IMAGEN
+                            result = client.models.generate_images(
+                                model='imagen-3.0-generate-001',
+                                prompt=final_prompt,
+                                image=gambar_referensi,
+                                image_weight=berat_slider, 
+                                number_of_images=1,
+                                output_mime_type="image/jpeg"
+                            )
+                            
+                            # Menampilkan Gambar Hasil
+                            for generated_image in result.generated_images:
+                                final_img = Image.open(io.BytesIO(generated_image.image.image_bytes))
+                                st.success("✅ Render Berhasil! Google Imagen mengeksekusi visi Anda.")
+                                st.image(final_img, caption=f"Render Final (Cuaca: {st.session_state.lighting_mood} | Image Weight: {berat_slider})", use_column_width=True)
+                                
+                        except Exception as e:
+                            st.error(f"❌ Gagal memanggil server Google Imagen: {e}")
+                            
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
             
