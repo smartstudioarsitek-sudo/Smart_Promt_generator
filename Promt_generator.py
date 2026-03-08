@@ -585,7 +585,7 @@ with col_right:
                                         base_rgb = base_image_resized.convert("RGB")
                                         
                                         result = client.models.edit_images(
-                                            model='imagen-4.0-generate-001',
+                                            model='imagen-3.0-generate-001', # 👈 UBAH MENJADI INI
                                             prompt=micro_prompt,
                                             base_image=base_rgb,
                                             mask_image=mask_image,
