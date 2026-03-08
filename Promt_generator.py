@@ -338,53 +338,41 @@ with col_left:
     
     tab1, tab2, tab3, tab4 = st.tabs(["🏛️ Geometri & Material", "💡 Tata Cahaya", "🌍 Konteks Lingkungan", "📷 Sinema & Lensa"])
     with tab1:
-        st.markdown('<div class="section-title">📐 Geometry & Auto-Depth AI</div>', unsafe_allow_html=True)
-        st.info("💡 Unggah SATU screenshot warna dari Revit/SketchUp. AI kami akan otomatis memindai kedalaman ruang (Depth Map) di latar belakang.")
+        st.markdown('<div class="section-title">📐 Geometry & Standar Operasional (SOP)</div>', unsafe_allow_html=True)
         
+        # --- KOTAK SOP UNTUK USER ---
+        st.warning("""
+        **⚠️ SOP UPLOAD SKETSA (WAJIB DIBACA AGAR HASIL FOTOREALISTIS):**
+        1. **Nyalakan Bayangan:** Di SketchUp/Revit, WAJIB nyalakan fitur *Shadows* (Bayangan matahari tipis) agar AI memahami kedalaman fasad.
+        2. **Gaya Visual:** Gunakan mode *Shaded with Edges* atau *Hidden Line*. Pastikan garis bangunan terlihat tajam.
+        3. **Bersihkan Layar:** Sembunyikan garis bantu (axis), teks dimensi, atau orang 2D bawaan SketchUp. AI akan mengira itu bagian dari struktur.
+        4. **Sudut Kamera:** Gunakan mode *Perspective* (Kamera manusia/mata burung), hindari *Parallel Projection* yang kaku.
+        """)
+        # ----------------------------
+
         # 1. PENGGUNA HANYA UPLOAD 1 KALI DI SINI
-        uploaded_raw_image = st.file_uploader("1️⃣ Upload Screenshot Bangunan 3D", type=["png", "jpg", "jpeg"], key="raw_image_up")
+        uploaded_raw_image = st.file_uploader("1️⃣ Upload Screenshot Bangunan 3D (Sesuai SOP)", type=["png", "jpg", "jpeg"], key="raw_image_up")
         
         if uploaded_raw_image is not None:
-            # BACA ID FILE UNTUK MENGETAHUI APAKAH INI GAMBAR BARU ATAU LAMA
-            file_id = uploaded_raw_image.file_id
+            raw_img = Image.open(uploaded_raw_image).convert("RGB")
+            st.session_state.uploaded_sketch = True 
             
-            # LOGIKA ANTI-LAG: HANYA JALANKAN AI JIKA GAMBARNYA BARU
-            if st.session_state.get('last_file_id') != file_id:
-                raw_img = Image.open(uploaded_raw_image).convert("RGB")
-                st.session_state['raw_img_cache'] = raw_img # Simpan gambar asli ke memori
-                
-                with st.spinner("🤖 AI memindai kedalaman (Hanya jalan 1x untuk mencegah lag)..."):
-                    auto_depth_img = generate_auto_depth_map(raw_img)
-                    
-                    if auto_depth_img:
-                        st.session_state['depth_img_cache'] = auto_depth_img # Simpan depth map ke memori
-                        
-                        # Bungkus gambar AI jadi file untuk Replicate
-                        import io
-                        depth_bytes = io.BytesIO()
-                        auto_depth_img.save(depth_bytes, format='PNG')
-                        depth_bytes.seek(0)
-                        
-                        st.session_state.auto_depth_file = depth_bytes
-                        st.session_state.uploaded_sketch = True 
-                        st.session_state['last_file_id'] = file_id # Kunci memori agar AI tidak kerja 2x
+            # Tampilkan preview gambar
+            st.image(raw_img, caption="Preview Gambar Input", use_column_width=True)
             
-            # TAMPILKAN GAMBAR LANGSUNG DARI MEMORI (INSTAN!)
-            if 'raw_img_cache' in st.session_state and 'depth_img_cache' in st.session_state:
-                c_img1, c_img2 = st.columns(2)
-                with c_img1:
-                    st.image(st.session_state['raw_img_cache'], caption="1. Gambar Asli (Input)", use_column_width=True)
-                with c_img2:
-                    st.image(st.session_state['depth_img_cache'], caption="2. Auto-Depth Map (Siap untuk ControlNet)", use_column_width=True)
+            # Bungkus gambar asli langsung untuk dikirim ke Canny (Tanpa Auto-Depth yang bikin buram)
+            import io
+            img_bytes = io.BytesIO()
+            raw_img.save(img_bytes, format='PNG')
+            img_bytes.seek(0)
+            st.session_state.canny_ready_file = img_bytes
+            
         else:
-            # Bersihkan memori jika pengguna menghapus gambar (klik tanda X)
             st.session_state.uploaded_sketch = None
-            st.session_state['last_file_id'] = None
-            st.session_state.pop('raw_img_cache', None)
-            st.session_state.pop('depth_img_cache', None)
 
         st.markdown("---")
-        # ... (Kode Semantic Masking dan dropdown di bawahnya biarkan saja seperti semula)
+        # ... (Kode Semantic Masking dan pilihan dropdown Material biarkan seperti semula)
+    
     
         
         # 2. SEMANTIC MASKING (Opsional)
@@ -547,40 +535,48 @@ with col_right:
                         import replicate
                         rep_client = replicate.Client(api_token=replicate_api_key)
                         
-                        # Ambil gambar Depth Map buatan AI Lokal dari memori
-                        depth_ai_file = st.session_state.get('auto_depth_file')
+                        # Ambil file gambar asli yang sudah disiapkan di Tab 1
+                        canny_file = st.session_state.get('canny_ready_file')
                         
-                        if not depth_ai_file:
-                            st.warning("⚠️ Menunggu AI Lokal membuat Depth Map. Silakan upload ulang gambar di Tab Geometri (Kolom Kiri).")
+                        if not canny_file:
+                            st.warning("⚠️ Silakan upload gambar 3D Anda di Tab Geometri terlebih dahulu.")
                         else:
-                            depth_ai_file.seek(0)
+                            canny_file.seek(0)
                             
-                            with st.spinner("Memulai Render Arsitektur (Engine Utama: FLUX.1 Depth Official)..."):
+                            with st.spinner("Memulai Render ArchViz Presisi Tinggi (Engine: FLUX.1 Canny)..."):
                                 
-                                # Menggunakan model FLUX Resmi (Anti-Hapus & Paling Canggih)
+                                # --- THE SECRET SAUCE: MASTER PROMPT INJECTION ---
+                                # Kita paksa AI menambahkan elemen fotorealistis mutlak di luar prompt user
+                                master_prompt = (
+                                    "Breathtaking architectural exterior photography, masterpiece of modern architecture. "
+                                    f"{st.session_state.generated_prompt}. "
+                                    "Hyper-realistic environment, post-rain wet ground with subtle reflections, "
+                                    "dramatic ambient sunlight, lush and highly detailed landscaping, 8k resolution, "
+                                    "V-Ray render, photorealistic textures, global illumination."
+                                )
+                                
                                 output = rep_client.run(
-                                    "black-forest-labs/flux-depth-dev",
+                                    "black-forest-labs/flux-canny-dev",
                                     input={
-                                        "prompt": st.session_state.generated_prompt + ", award-winning architectural photography, highly detailed, 8k, V-Ray render, global illumination",
-                                        
-                                        # Parameter khusus model FLUX
-                                        "control_image": depth_ai_file, 
-                                        "num_inference_steps": 35,
-                                        "guidance": 10.0
+                                        "prompt": master_prompt,
+                                        "control_image": canny_file, 
+                                        "num_inference_steps": 40,  # Langkah komputasi maksimal untuk detail
+                                        "guidance": 15.0,           # Kepatuhan sangat tinggi pada Master Prompt
+                                        "control_strength": 0.65    # KUNCI UTAMA: Diturunkan dari 0.85 agar AI tidak kaku dan berani memberi tekstur
                                     }
                                 )
                                 
                             if output:
                                 final_image_url = str(output[0]) if isinstance(output, list) else str(output)
-                                st.success("✅ Render Berhasil dengan Engine FLUX.1 Depth!")
-                                st.image(final_image_url, caption="Render Final Arsitektur (Auto-Depth)", use_column_width=True)
+                                st.success("✅ Render Presisi Berhasil! Geometri akurat, visual fotorealistis.")
+                                st.image(final_image_url, caption="Final ArchViz Render", use_column_width=True)
                                 st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
                             else:
                                 st.error("Gagal mengekstrak gambar dari server.")
                             
                     except Exception as e:
                         st.error(f"Terjadi kesalahan pada server Replicate: {e}")
-                                                                                                                  
+                                                                                                                                      
                                                                                                                                                                             
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
