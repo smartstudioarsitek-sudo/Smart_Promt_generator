@@ -334,6 +334,9 @@ with col_left:
         st.markdown("### 🎨 Spesifikasi Material (PBR)")
         st.info("💡 Pilih material untuk area bangunan. Aplikasi akan otomatis merakit deskripsi fotorealistis (English) ke dalam otak Imagen.")
         
+        # 👇 INI DIA OBATNYA (Mendefinisikan LIST_MATERIAL_PBR otomatis dari KAMUS_PBR) 👇
+        LIST_MATERIAL_PBR = list(KAMUS_PBR.keys()) + ["Kustom (Ketik Manual)"]
+        
         c1, c2 = st.columns(2)
         
         def pbr_selector(label, key_state):
@@ -371,7 +374,7 @@ with col_left:
         st.session_state.material = st.selectbox("Material Dasar Lingkungan", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
         st.session_state.weathering = st.selectbox("Kondisi Fisik / Keausan", db.DB_WEATHERING, index=db.DB_WEATHERING.index(st.session_state.weathering))
         st.session_state.detail = st.text_area("Detail Spesifik Khusus", value=st.session_state.detail, height=80)
-                
+                    
     with tab2:
         st.session_state.temp_warna = st.selectbox("Suhu Warna Lampu (Kelvin)", db.DB_TEMP_WARNA, index=db.DB_TEMP_WARNA.index(st.session_state.temp_warna))
         meta_flag = getattr(db, 'DB_VIEW_FLAGS', {}).get(st.session_state.view, {})
