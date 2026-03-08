@@ -551,31 +551,28 @@ with col_right:
                         depth_ai_file = st.session_state.get('auto_depth_file')
                         
                         if not depth_ai_file:
-                            st.warning("⚠️ Menunggu AI Lokal membuat Depth Map. Silakan upload ulang gambar di Tab Geometri.")
+                            st.warning("⚠️ Menunggu AI Lokal membuat Depth Map. Silakan upload ulang gambar di Tab Geometri (Kolom Kiri).")
                         else:
                             depth_ai_file.seek(0)
                             
-                            with st.spinner("Memulai Render Arsitektur (Engine: Lucataco SDXL Depth)..."):
+                            with st.spinner("Memulai Render Arsitektur (Engine Utama: FLUX.1 Depth Official)..."):
                                 
-                                # Menggunakan model yang TERBUKTI JALAN di dashboard Kakak
+                                # Menggunakan model FLUX Resmi (Anti-Hapus & Paling Canggih)
                                 output = rep_client.run(
-                                    "lucataco/sdxl-controlnet",
+                                    "black-forest-labs/flux-depth-dev",
                                     input={
                                         "prompt": st.session_state.generated_prompt + ", award-winning architectural photography, highly detailed, 8k, V-Ray render, global illumination",
-                                        "negative_prompt": "3d render, sketchup, lumion, cartoon, flat, wireframe, blueprint, plastic, illustration, CGI, overexposed, text, watermark",
                                         
-                                        # Parameter khusus model Lucataco
-                                        "image": depth_ai_file, 
-                                        "controlnet": "depth", 
-                                        "condition_scale": 0.65, # Bobot geometri (65%)
-                                        "num_inference_steps": 40,
-                                        "scheduler": "K_EULER_ANCESTRAL"
+                                        # Parameter khusus model FLUX
+                                        "control_image": depth_ai_file, 
+                                        "num_inference_steps": 35,
+                                        "guidance": 10.0
                                     }
                                 )
                                 
                             if output:
                                 final_image_url = str(output[0]) if isinstance(output, list) else str(output)
-                                st.success("✅ Render Berhasil dengan Engine SDXL ControlNet!")
+                                st.success("✅ Render Berhasil dengan Engine FLUX.1 Depth!")
                                 st.image(final_image_url, caption="Render Final Arsitektur (Auto-Depth)", use_column_width=True)
                                 st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
                             else:
@@ -583,7 +580,7 @@ with col_right:
                             
                     except Exception as e:
                         st.error(f"Terjadi kesalahan pada server Replicate: {e}")
-                                                                                              
+                                                                                                                  
                                                                                                                                                                             
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
