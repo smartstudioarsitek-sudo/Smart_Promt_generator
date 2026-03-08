@@ -71,32 +71,6 @@ KAMUS_PBR = {
     "Kustom (Ketik Manual)": "" # Opsi fleksibel
 }
 
-LIST_MATERIAL_PBR = list(KAMUS_PBR.keys())
-# ==========================================
-# MESIN AI LOKAL (DEPTH ESTIMATOR)
-# ==========================================
-@st.cache_resource(show_spinner=False)
-def load_depth_estimator():
-    """
-    Memuat model GLPN (Global-Local Path Network) secara permanen.
-    Sangat ringan (~200MB), tanpa token, dan sangat akurat untuk arsitektur.
-    """
-    from transformers import pipeline
-    # Mengunduh model AI pembuat Depth Map
-    estimator = pipeline("depth-estimation", model="vinvino02/glpn-nyu")
-    return estimator
-
-def generate_auto_depth_map(image_input):
-    """Fungsi ajaib pengubah foto flat menjadi Depth Map 3D"""
-    try:
-        estimator = load_depth_estimator()
-        # AI membaca jarak objek di dalam gambar
-        hasil = estimator(image_input)
-        # Mengembalikan gambar hitam putih (Depth Map)
-        return hasil['depth']
-    except Exception as e:
-        st.error(f"Gagal memproses Auto-Depth: {e}")
-        return None
 
 # ==========================================
 # 1. KONFIGURASI KEAMANAN & API
@@ -338,94 +312,30 @@ with col_left:
     
     tab1, tab2, tab3, tab4 = st.tabs(["🏛️ Geometri & Material", "💡 Tata Cahaya", "🌍 Konteks Lingkungan", "📷 Sinema & Lensa"])
     with tab1:
-        st.markdown('<div class="section-title">📐 Geometry & Auto-Depth AI</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">📐 Referensi Visual & Parameter</div>', unsafe_allow_html=True)
+        st.info("💡 Unggah screenshot 3D (Revit/SketchUp) sebagai panduan visual untuk Google Imagen.")
         
-        # --- KOTAK SOP UNTUK USER (WAJIB DIBACA) ---
-        st.warning("""
-        **⚠️ SOP UPLOAD SKETSA (BACA AGAR HASIL FOTOREALISTIS):**
-        1. **Nyalakan Bayangan:** Di SketchUp/Revit, WAJIB nyalakan fitur *Shadows* (Bayangan matahari tipis) agar AI memahami kedalaman fasad.
-        2. **Gaya Visual:** Gunakan mode *Shaded with Edges* atau *Hidden Line*. Pastikan garis bangunan terlihat tajam.
-        3. **Bersihkan Layar:** Sembunyikan garis bantu (axis), teks dimensi, atau orang 2D bawaan SketchUp. AI akan mengira itu bagian dari struktur.
-        4. **Sudut Kamera:** Gunakan mode *Perspective* (Kamera manusia), hindari mode *Parallel Projection* yang kaku.
-        """)
-        # ----------------------------
-
-        # 1. PENGGUNA HANYA UPLOAD 1 KALI DI SINI
-        uploaded_raw_image = st.file_uploader("1️⃣ Upload Screenshot Bangunan 3D (Sesuai SOP)", type=["png", "jpg", "jpeg"], key="raw_image_up")
+        # Upload referensi polos
+        uploaded_raw_image = st.file_uploader("🖼️ Upload Referensi Bangunan", type=["png", "jpg", "jpeg"], key="raw_image_up")
         
         if uploaded_raw_image is not None:
             raw_img = Image.open(uploaded_raw_image).convert("RGB")
+            st.image(raw_img, caption="Gambar Referensi Input", use_column_width=True)
             st.session_state.uploaded_sketch = True 
             
-            # Tampilkan preview gambar asli user (Tanpa Auto-Depth yang bikin buram)
-            st.image(raw_img, caption="1. Gambar Asli (Input)", use_column_width=True)
-            
-            # Bungkus gambar asli langsung untuk dikirim ke Canny (Anti-Depth yang bikin buram)
-            import io
-            img_bytes = io.BytesIO()
-            raw_img.save(img_bytes, format='PNG')
-            img_bytes.seek(0)
-            
-            st.session_state.canny_ready_file = img_bytes
-            
+            # Simpan gambar ke memori untuk diakses Imagen nanti
+            st.session_state.base_reference_image = raw_img
         else:
             st.session_state.uploaded_sketch = None
 
         st.markdown("---")
-       
-    
         
-        # 2. SEMANTIC MASKING (Opsional)
-        use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
-        st.session_state.use_color_masking = use_masking
-
-        uploaded_mask_file = None 
-        if st.session_state.use_color_masking:
-            uploaded_mask_file = st.file_uploader("2️⃣ Upload Semantic Mask (Pemetaan Material)", type=["png", "jpg"], key="mask_up")
-            
-            if uploaded_mask_file is not None:
-                try:
-                    mask_img = Image.open(uploaded_mask_file)
-                    st.image(mask_img, caption="Preview Semantic Masking", use_column_width=True)
-                except Exception:
-                    st.error("❌ File mask bukan gambar yang valid.")
-
-            st.info("💡 Pilih material dalam bahasa Indonesia. Aplikasi akan otomatis merakit mantra 3D/PBR bahasa Inggris ke dalam prompt.")
-            c1, c2 = st.columns(2)
-            
-            def pbr_selector(label, key_state):
-                current_english = st.session_state.get(key_state, "")
-                current_indo = "Kustom (Ketik Manual)"
-                for indo, eng in KAMUS_PBR.items():
-                    if eng == current_english:
-                        current_indo = indo
-                        break
-                
-                pilihan_indo = st.selectbox(label, LIST_MATERIAL_PBR, index=LIST_MATERIAL_PBR.index(current_indo), key=f"sel_{key_state}")
-                
-                if pilihan_indo == "Kustom (Ketik Manual)":
-                    st.session_state[key_state] = st.text_input(f"Ketik instruksi PBR (English) untuk {label}:", value=current_english, key=f"txt_{key_state}")
-                else:
-                    st.session_state[key_state] = KAMUS_PBR[pilihan_indo]
-            
-            with c1:
-                pbr_selector("⚪ Putih/Terang (Dinding/Wall)", "mask_white")
-                pbr_selector("🔘 Abu-Abu (Kolom/Beton)", "mask_gray")
-                pbr_selector("⚫ Abu Gelap/Hitam (Kusen/Atap)", "mask_dark")
-                pbr_selector("🟤 Coklat (Pintu/Kayu)", "mask_brown")
-                
-            with c2:
-                pbr_selector("🧱 Merah Bata (Aksen Dinding)", "mask_brick")
-                pbr_selector("🩵 Biru Muda (Kaca Jendela)", "mask_blue")
-                pbr_selector("🟡 Krem/Kuning (Lantai/Keramik)", "mask_cream")
-                pbr_selector("🟢 Hijau/Bebas (Vegetasi/Lainnya)", "mask_green")
-                                
-        st.markdown("---")
+        # Parameter pembuat teks Prompt (Biarkan ini karena sangat penting untuk Google Imagen)
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
         st.session_state.gaya = st.selectbox("Gaya Arsitektur", db.DB_GAYA, index=db.DB_GAYA.index(st.session_state.gaya))
-        st.session_state.material = st.selectbox("Material Dasar Lingkungan (Base Material)", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
-        st.session_state.weathering = st.selectbox("Kondisi Fisik / Keausan Material", db.DB_WEATHERING, index=db.DB_WEATHERING.index(st.session_state.weathering))
-        st.session_state.detail = st.text_area("Detail Spesifik Khusus (Struktur/Bentuk)", value=st.session_state.detail, height=80)
+        st.session_state.material = st.selectbox("Material Dasar Lingkungan", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
+        st.session_state.weathering = st.selectbox("Kondisi Fisik / Keausan", db.DB_WEATHERING, index=db.DB_WEATHERING.index(st.session_state.weathering))
+        st.session_state.detail = st.text_area("Detail Spesifik Khusus", value=st.session_state.detail, height=80)
             
     with tab2:
         st.session_state.temp_warna = st.selectbox("Suhu Warna Lampu (Kelvin)", db.DB_TEMP_WARNA, index=db.DB_TEMP_WARNA.index(st.session_state.temp_warna))
@@ -522,61 +432,8 @@ with col_right:
             st.markdown("---")
             st.markdown("#### 2️⃣ Render Presisi via API (Stable Diffusion + ControlNet)")
             st.write("Mengunci presisi geometri sketsa Anda secara absolut menggunakan infrastruktur Replicate Cloud.")
-            
-            replicate_api_key = st.text_input("🔑 Masukkan Replicate API Token (Wajib untuk ControlNet):", type="password", key="rep_key")
-            
-            if st.button("🚀 RENDER SKETSA (CONTROLNET)", use_container_width=True, type="primary"):
-                if not replicate_api_key:
-                    st.error("🚨 Mohon masukkan Replicate API Token terlebih dahulu!")
-                elif not st.session_state.uploaded_sketch:
-                    st.warning("⚠️ Sketsa belum diunggah! ControlNet membutuhkan gambar dasar (sketsa CAD/BIM) di Tab 'Geometri & Material' untuk menjiplak garis.")
-                else:
-                    try:
-                        import replicate
-                        rep_client = replicate.Client(api_token=replicate_api_key)
-                        
-                        # Ambil file gambar asli user dari memori
-                        canny_file = st.session_state.get('canny_ready_file')
-                        
-                        if not canny_file:
-                            st.warning("⚠️ Silakan upload gambar 3D Anda di Tab Geometri terlebih dahulu.")
-                        else:
-                            canny_file.seek(0)
-                            
-                            with st.spinner("Memulai Render Presisi (Engine Utama: FLUX.1 Canny)..."):
-                                
-                                # --- THE SECRET SAUCE: MASTER PROMPT INJECTION ---
-                                # Kita paksa AI menambahkan elemen fotorealistis mutlak di luar prompt user
-                                master_prompt = (
-                                    "Breathtaking architectural exterior photography, master-piece of modern architecture. "
-                                    f"{st.session_state.generated_prompt}. "
-                                    "Hyper-realistic environment, post-rain wet ground with subtle reflections, "
-                                    "dramatic ambient sunlight, lush and highly detailed landscaping, 8k resolution, "
-                                    "V-Ray render, photorealistic textures, global illumination."
-                                )
-                                
-                                output = rep_client.run(
-                                    "black-forest-labs/flux-canny-dev",
-                                    input={
-                                        "prompt": master_prompt,
-                                        "control_image": canny_file, 
-                                        "num_inference_steps": 40,  # Langkah maksimal untuk detail
-                                        "guidance": 15.0,           # Kepatuhan sangat tinggi pada prompt visual
-                                        "control_strength": 0.65    # KUNCI UTAMA: Diturunkan agar AI tidak kaku dan berani memberi tekstur/efek
-                                    }
-                                )
-                                
-                            if output:
-                                final_image_url = str(output[0]) if isinstance(output, list) else str(output)
-                                st.success("✅ Render Presisi Berhasil! Geometri akurat, visual fotorealistis.")
-                                st.image(final_image_url, caption="Final ArchViz Render", use_column_width=True)
-                                st.markdown(f"[⬇️ Klik di sini untuk mengunduh gambar resolusi tinggi]({final_image_url})")
-                            else:
-                                st.error("Gagal mengekstrak gambar dari server.")
-                            
-                    except Exception as e:
-                        st.error(f"Terjadi kesalahan pada server Replicate: {e}")
-                                                                                                                                                          
+                      
+                                                                                                                                                                      
                                                                                                                                                                             
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
