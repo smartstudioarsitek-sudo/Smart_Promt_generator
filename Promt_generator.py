@@ -312,7 +312,7 @@ with col_left:
     
     tab1, tab2, tab3, tab4 = st.tabs(["🏛️ Geometri & Material", "💡 Tata Cahaya", "🌍 Konteks Lingkungan", "📷 Sinema & Lensa"])
     with tab1:
-        st.markdown('<div class="section-title">📐 Referensi Visual & Parameter</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">📐 Referensi Visual & Material PBR</div>', unsafe_allow_html=True)
         st.info("💡 Unggah screenshot 3D (Revit/SketchUp) sebagai panduan visual untuk Google Imagen.")
         
         # Upload referensi polos
@@ -330,13 +330,48 @@ with col_left:
 
         st.markdown("---")
         
-        # Parameter pembuat teks Prompt (Biarkan ini karena sangat penting untuk Google Imagen)
+        # --- FITUR MATERIAL PBR DIKEMBALIKAN ---
+        st.markdown("### 🎨 Spesifikasi Material (PBR)")
+        st.info("💡 Pilih material untuk area bangunan. Aplikasi akan otomatis merakit deskripsi fotorealistis (English) ke dalam otak Imagen.")
+        
+        c1, c2 = st.columns(2)
+        
+        def pbr_selector(label, key_state):
+            current_english = st.session_state.get(key_state, "")
+            current_indo = "Kustom (Ketik Manual)"
+            for indo, eng in KAMUS_PBR.items():
+                if eng == current_english:
+                    current_indo = indo
+                    break
+            
+            pilihan_indo = st.selectbox(label, LIST_MATERIAL_PBR, index=LIST_MATERIAL_PBR.index(current_indo), key=f"sel_{key_state}")
+            
+            if pilihan_indo == "Kustom (Ketik Manual)":
+                st.session_state[key_state] = st.text_input(f"Ketik instruksi PBR (English) untuk {label}:", value=current_english, key=f"txt_{key_state}")
+            else:
+                st.session_state[key_state] = KAMUS_PBR[pilihan_indo]
+        
+        with c1:
+            pbr_selector("⚪ Putih/Terang (Dinding/Wall)", "mask_white")
+            pbr_selector("🔘 Abu-Abu (Kolom/Beton)", "mask_gray")
+            pbr_selector("⚫ Abu Gelap/Hitam (Kusen/Atap)", "mask_dark")
+            pbr_selector("🟤 Coklat (Pintu/Kayu)", "mask_brown")
+            
+        with c2:
+            pbr_selector("🧱 Merah Bata (Aksen Dinding)", "mask_brick")
+            pbr_selector("🩵 Biru Muda (Kaca Jendela)", "mask_blue")
+            pbr_selector("🟡 Krem/Kuning (Lantai/Keramik)", "mask_cream")
+            pbr_selector("🟢 Hijau/Bebas (Vegetasi/Lainnya)", "mask_green")
+                            
+        st.markdown("---")
+        
+        # Parameter pembuat teks Prompt Utama
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
         st.session_state.gaya = st.selectbox("Gaya Arsitektur", db.DB_GAYA, index=db.DB_GAYA.index(st.session_state.gaya))
         st.session_state.material = st.selectbox("Material Dasar Lingkungan", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
         st.session_state.weathering = st.selectbox("Kondisi Fisik / Keausan", db.DB_WEATHERING, index=db.DB_WEATHERING.index(st.session_state.weathering))
         st.session_state.detail = st.text_area("Detail Spesifik Khusus", value=st.session_state.detail, height=80)
-            
+                
     with tab2:
         st.session_state.temp_warna = st.selectbox("Suhu Warna Lampu (Kelvin)", db.DB_TEMP_WARNA, index=db.DB_TEMP_WARNA.index(st.session_state.temp_warna))
         meta_flag = getattr(db, 'DB_VIEW_FLAGS', {}).get(st.session_state.view, {})
