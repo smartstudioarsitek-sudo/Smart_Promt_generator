@@ -345,32 +345,47 @@ with col_left:
         uploaded_raw_image = st.file_uploader("1️⃣ Upload Screenshot Bangunan 3D", type=["png", "jpg", "jpeg"], key="raw_image_up")
         
         if uploaded_raw_image is not None:
-            raw_img = Image.open(uploaded_raw_image).convert("RGB")
+            # BACA ID FILE UNTUK MENGETAHUI APAKAH INI GAMBAR BARU ATAU LAMA
+            file_id = uploaded_raw_image.file_id
             
-            c_img1, c_img2 = st.columns(2)
-            with c_img1:
-                st.image(raw_img, caption="1. Gambar Asli (Input)", use_column_width=True)
+            # LOGIKA ANTI-LAG: HANYA JALANKAN AI JIKA GAMBARNYA BARU
+            if st.session_state.get('last_file_id') != file_id:
+                raw_img = Image.open(uploaded_raw_image).convert("RGB")
+                st.session_state['raw_img_cache'] = raw_img # Simpan gambar asli ke memori
                 
-            with c_img2:
-                with st.spinner("🤖 AI sedang mengekstrak Peta Kedalaman (Depth Map)..."):
+                with st.spinner("🤖 AI memindai kedalaman (Hanya jalan 1x untuk mencegah lag)..."):
                     auto_depth_img = generate_auto_depth_map(raw_img)
                     
                     if auto_depth_img:
-                        st.image(auto_depth_img, caption="2. Auto-Depth Map (Siap untuk ControlNet)", use_column_width=True)
+                        st.session_state['depth_img_cache'] = auto_depth_img # Simpan depth map ke memori
                         
-                        # --- [PENTING] Bungkus gambar AI jadi file agar bisa dikirim ke Replicate ---
+                        # Bungkus gambar AI jadi file untuk Replicate
                         import io
                         depth_bytes = io.BytesIO()
                         auto_depth_img.save(depth_bytes, format='PNG')
                         depth_bytes.seek(0)
                         
-                        # Simpan ke memori sistem
                         st.session_state.auto_depth_file = depth_bytes
-                        st.session_state.uploaded_sketch = True # Trigger agar tombol render aktif
+                        st.session_state.uploaded_sketch = True 
+                        st.session_state['last_file_id'] = file_id # Kunci memori agar AI tidak kerja 2x
+            
+            # TAMPILKAN GAMBAR LANGSUNG DARI MEMORI (INSTAN!)
+            if 'raw_img_cache' in st.session_state and 'depth_img_cache' in st.session_state:
+                c_img1, c_img2 = st.columns(2)
+                with c_img1:
+                    st.image(st.session_state['raw_img_cache'], caption="1. Gambar Asli (Input)", use_column_width=True)
+                with c_img2:
+                    st.image(st.session_state['depth_img_cache'], caption="2. Auto-Depth Map (Siap untuk ControlNet)", use_column_width=True)
         else:
+            # Bersihkan memori jika pengguna menghapus gambar (klik tanda X)
             st.session_state.uploaded_sketch = None
+            st.session_state['last_file_id'] = None
+            st.session_state.pop('raw_img_cache', None)
+            st.session_state.pop('depth_img_cache', None)
 
         st.markdown("---")
+        # ... (Kode Semantic Masking dan dropdown di bawahnya biarkan saja seperti semula)
+    
         
         # 2. SEMANTIC MASKING (Opsional)
         use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
