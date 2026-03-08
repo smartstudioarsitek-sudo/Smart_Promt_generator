@@ -544,8 +544,10 @@ with col_right:
                     st.warning("⚠️ Sketsa belum diunggah! ControlNet membutuhkan gambar dasar (sketsa CAD/BIM) di Tab 'Geometri & Material' untuk menjiplak garis.")
                 else:
                     try:
-                        os.environ["REPLICATE_API_TOKEN"] = replicate_api_key
                         import replicate
+                        
+                        # [KUNCI FIX]: Gunakan pemanggilan Client secara eksplisit, jangan pakai os.environ!
+                        rep_client = replicate.Client(api_token=replicate_api_key)
                         
                         # Ambil gambar Depth Map buatan AI Lokal dari memori
                         depth_ai_file = st.session_state.get('auto_depth_file')
@@ -576,7 +578,8 @@ with col_right:
                                 rep_input["controlnet_2"] = "segmentation"
                                 rep_input["controlnet_2_conditioning_scale"] = 0.85
                                 
-                            output = replicate.run(
+                            # EKSEKUSI MENGGUNAKAN CLIENT EKSPLISIT KITA
+                            output = rep_client.run(
                                 "fofr/sdxl-multi-controlnet:382b6826640cdd3fcba5a5960098df4478345c2f3ccf8c3caee547432d56a7bc",
                                 input=rep_input
                             )
@@ -596,7 +599,7 @@ with col_right:
                             
                     except Exception as e:
                         st.error(f"Terjadi kesalahan pada server Replicate: {e}")
-                                                       
+                                                                          
                                                                                                                                                                             
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
