@@ -341,8 +341,8 @@ with col_left:
         st.markdown('<div class="section-title">📐 Geometry & Auto-Depth AI</div>', unsafe_allow_html=True)
         st.info("💡 Unggah SATU screenshot warna dari Revit/SketchUp. AI kami akan otomatis memindai kedalaman ruang (Depth Map) di latar belakang.")
         
-        # 1. PENGGUNA HANYA UPLOAD 1 GAMBAR BIASA
-        uploaded_raw_image = st.file_uploader("🖼️ Upload Screenshot Bangunan 3D", type=["png", "jpg", "jpeg"], key="raw_image_up")
+        # 1. PENGGUNA HANYA UPLOAD 1 KALI DI SINI
+        uploaded_raw_image = st.file_uploader("1️⃣ Upload Screenshot Bangunan 3D", type=["png", "jpg", "jpeg"], key="raw_image_up")
         
         if uploaded_raw_image is not None:
             raw_img = Image.open(uploaded_raw_image).convert("RGB")
@@ -353,26 +353,32 @@ with col_left:
                 
             with c_img2:
                 with st.spinner("🤖 AI sedang mengekstrak Peta Kedalaman (Depth Map)..."):
-                    # PANGGIL MESIN LOKAL KITA DI SINI
                     auto_depth_img = generate_auto_depth_map(raw_img)
                     
                     if auto_depth_img:
                         st.image(auto_depth_img, caption="2. Auto-Depth Map (Siap untuk ControlNet)", use_column_width=True)
-                        # Simpan ke memori untuk dikirim ke Replicate nanti
-                        st.session_state.auto_depth_image = auto_depth_img
+                        
+                        # --- [PENTING] Bungkus gambar AI jadi file agar bisa dikirim ke Replicate ---
+                        import io
+                        depth_bytes = io.BytesIO()
+                        auto_depth_img.save(depth_bytes, format='PNG')
+                        depth_bytes.seek(0)
+                        
+                        # Simpan ke memori sistem
+                        st.session_state.auto_depth_file = depth_bytes
                         st.session_state.uploaded_sketch = True # Trigger agar tombol render aktif
         else:
             st.session_state.uploaded_sketch = None
 
         st.markdown("---")
         
-        # 2. SEMANTIC MASKING (Tetap dipertahankan untuk opsi lanjutan)
+        # 2. SEMANTIC MASKING (Opsional)
         use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
         st.session_state.use_color_masking = use_masking
 
         uploaded_mask_file = None 
         if st.session_state.use_color_masking:
-            uploaded_mask_file = st.file_uploader("3️⃣ Upload Semantic Mask (Pemetaan Material)", type=["png", "jpg"], key="mask_up")
+            uploaded_mask_file = st.file_uploader("2️⃣ Upload Semantic Mask (Pemetaan Material)", type=["png", "jpg"], key="mask_up")
             
             if uploaded_mask_file is not None:
                 try:
@@ -412,14 +418,12 @@ with col_left:
                 pbr_selector("🟢 Hijau/Bebas (Vegetasi/Lainnya)", "mask_green")
                                 
         st.markdown("---")
-        
-        # 3. PARAMETER GAYA ARSITEKTUR
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
         st.session_state.gaya = st.selectbox("Gaya Arsitektur", db.DB_GAYA, index=db.DB_GAYA.index(st.session_state.gaya))
         st.session_state.material = st.selectbox("Material Dasar Lingkungan (Base Material)", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
         st.session_state.weathering = st.selectbox("Kondisi Fisik / Keausan Material", db.DB_WEATHERING, index=db.DB_WEATHERING.index(st.session_state.weathering))
         st.session_state.detail = st.text_area("Detail Spesifik Khusus (Struktur/Bentuk)", value=st.session_state.detail, height=80)
-        
+            
     with tab2:
         st.session_state.temp_warna = st.selectbox("Suhu Warna Lampu (Kelvin)", db.DB_TEMP_WARNA, index=db.DB_TEMP_WARNA.index(st.session_state.temp_warna))
         meta_flag = getattr(db, 'DB_VIEW_FLAGS', {}).get(st.session_state.view, {})
