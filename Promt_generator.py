@@ -530,22 +530,33 @@ with col_right:
             base_img_file = st.file_uploader("🖼️ Unggah Gambar Base Render", type=["png", "jpg", "jpeg", "jfif", "webp"], key="inpaint_upload")
             
             if base_img_file is not None:
-                # --- LOGIKA MEMORI YANG DIAMANKAN ---
+                # --- LOGIKA MEMORI YANG DIAMANKAN & DISANITASI TOTAL ---
                 if "last_file_id" not in st.session_state or st.session_state.last_file_id != base_img_file.file_id:
                     try:
-                        # 1. PIPA NORMALISASI: Buka dan paksa konversi ke RGB murni
-                        # Mensterilkan residu kompresi anomali alfa/JFIF
+                        # 1. Buka dan konversi awal ke ruang tiga dimensi (RGB)
                         raw_img = Image.open(base_img_file).convert("RGB")
                         
-                        # 2. EVALUASI BOUNDS: Resize proporsional (Dynamic scale proportion)
+                        # 2. Resize proporsional untuk mencegah beban memori browser
                         raw_img.thumbnail((700, 700), Image.Resampling.LANCZOS)
                         
-                        # 3. KUNCI MUTLAK: Gunakan .copy() agar memori terisolasi
-                        st.session_state.inpaint_bg = raw_img.copy()
+                        # 3. SANITASI EKSTREM (Pembersihan Metadata JFIF)
+                        # Kita simpan gambar ke dalam buffer memori murni sebagai PNG 
+                        # untuk membakar habis semua metadata/header JFIF yang korup.
+                        import io
+                        sanitized_buffer = io.BytesIO()
+                        raw_img.save(sanitized_buffer, format="PNG")
+                        
+                        # Buka kembali dari buffer yang sudah steril
+                        clean_bg = Image.open(sanitized_buffer)
+                        
+                        # 4. Kunci memori menggunakan gambar yang sudah 100% steril
+                        st.session_state.inpaint_bg = clean_bg
                         st.session_state.last_file_id = base_img_file.file_id
                         
-                        # 4. FIKSASI KEY STATIS: Mencegah komponen React me-render ulang tanpa henti
-                        st.session_state.canvas_key = "canvas_session_stable"
+                        # 5. KUNCI KANVAS DINAMIS-STABIL: 
+                        # Menggunakan file_id agar tidak me-render ulang (ghosting) saat dilukis, 
+                        # namun tetap mau me-reset jika file gambar yang diunggah berbeda.
+                        st.session_state.canvas_key = f"canvas_session_{base_img_file.file_id}"
                     except Exception as e:
                         st.error(f"❌ Gagal memproses aliran gambar: {e}")
                 
@@ -562,24 +573,25 @@ with col_right:
                         
                         st.markdown("---")
                         if st.button("🗑️ Reset Kanvas", use_container_width=True):
-                            # Jika user mereset, kita izinkan mutasi key sementara, 
-                            # namun key utama tetap stabil saat unggah awal.
+                            # Injeksi random integer agar key berubah saat tombol reset ditekan, 
+                            # memaksa React menghapus coretan kanvas lama.
                             st.session_state.canvas_key = f"canvas_session_reset_{random.randint(1, 1000)}"
                             st.rerun()
                     
                     with col_canvas:
+                        # Kanvas sekarang disuplai oleh gambar PNG murni tanpa residu
                         canvas_result = st_canvas(
                             fill_color="rgba(255, 255, 255, 0.7)", 
                             stroke_width=stroke_width,
                             stroke_color="#FFFFFF", 
                             background_image=bg_img, 
                             update_streamlit=True,
-                            height=bg_img.height, # Sinkronisasi dimensi absolut
-                            width=bg_img.width,   # Sinkronisasi dimensi absolut
+                            height=bg_img.height, 
+                            width=bg_img.width,   
                             drawing_mode="freedraw",
                             key=st.session_state.canvas_key,
                         )
-       
+                   
     
     with tab_upscale:
         st.markdown("### 🔍 Ultra HD Upscaler (4K/8K)")
