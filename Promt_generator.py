@@ -519,7 +519,7 @@ with col_right:
                             
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
-            
+
     with tab_inpaint:
         st.markdown("### 🖌️ Kanvas Revisi (Inpainting)")
         st.info("Unggah gambar hasil render final Anda (dari Gemini/Midjourney/API), lalu 'lukis' area yang ingin direvisi.")
@@ -527,27 +527,22 @@ with col_right:
         if not HAS_CANVAS:
             st.error("🚨 Pustaka `streamlit-drawable-canvas` belum terdeteksi. Silakan install via terminal: `pip install streamlit-drawable-canvas`")
         else:
-            base_img_file = st.file_uploader("🖼️ Unggah Gambar Base Render", type=None, key="inpaint_upload")
+            # Tambahkan type file spesifik agar format aneh seperti jfif bisa terbaca lancar
+            base_img_file = st.file_uploader("🖼️ Unggah Gambar Base Render", type=["png", "jpg", "jpeg", "jfif", "webp"], key="inpaint_upload")
             
             if base_img_file is not None:
                 try:
-                    temp_img = Image.open(base_img_file).convert("RGB")
-                    MAX_SAFE_SIZE = (2048, 2048)
-                    temp_img.thumbnail(MAX_SAFE_SIZE, Image.Resampling.LANCZOS)
+                    # 1. Buka gambar dan LANGSUNG pastikan formatnya RGBA (Wajib untuk Canvas)
+                    temp_img = Image.open(base_img_file).convert("RGBA")
                     
+                    # 2. Resize gambar agar pas di layar UI dan tidak membuat server hang
                     max_width_ui = 600
                     if temp_img.width > max_width_ui:
-                        ratio = max_width_ui / temp_img.width
+                        ratio = max_width_ui / float(temp_img.width)
                         new_height = int(temp_img.height * ratio)
-                        ui_img = temp_img.resize((max_width_ui, new_height), Image.Resampling.LANCZOS)
+                        base_image_resized = temp_img.resize((max_width_ui, new_height), Image.Resampling.LANCZOS)
                     else:
-                        ui_img = temp_img.copy()
-                    
-                    clean_io = io.BytesIO()
-                    ui_img.save(clean_io, format="PNG")
-                    clean_io.seek(0)
-                    
-                    base_image_resized = Image.open(clean_io).convert("RGBA")
+                        base_image_resized = temp_img
 
                     st.markdown("**1. Lukis Area Masking**")
             
@@ -557,6 +552,10 @@ with col_right:
                         st.caption("Gunakan kuas untuk menutupi area yang ingin diubah. Area yang diwarnai putih akan diproses oleh AI.")
                     
                     with col_canvas:
+                        # --- KUNCI FIX BLANK CANVAS ---
+                        # Kita gunakan file_id unik agar Canvas dipaksa me-refresh gambar latar belakang!
+                        canvas_key = f"canvas_inpainting_{base_img_file.file_id}"
+                        
                         canvas_result = st_canvas(
                             fill_color="rgba(255, 255, 255, 0.7)", 
                             stroke_width=stroke_width,
@@ -566,7 +565,7 @@ with col_right:
                             height=base_image_resized.height,
                             width=base_image_resized.width,
                             drawing_mode="freedraw",
-                            key="canvas_inpainting",
+                            key=canvas_key, # 👈 Key dinamis bekerja di sini
                         )
                     
                     st.markdown("---")
@@ -578,14 +577,16 @@ with col_right:
                             if micro_prompt:
                                 with st.spinner("Mengirim masker dan instruksi ke Google AI (Inpainting)..."):
                                     try:
+                                        # Buat Topeng Hitam-Putih
                                         mask_array = np.zeros((base_image_resized.height, base_image_resized.width), dtype=np.uint8)
                                         mask_array[canvas_result.image_data[:, :, 3] > 0] = 255
                                         mask_image = Image.fromarray(mask_array, mode="L")
                                         
                                         base_rgb = base_image_resized.convert("RGB")
                                         
+                                        # Eksekusi Imagen 3.0 (Perbaikan Versi)
                                         result = client.models.edit_images(
-                                            model='imagen-3.0-generate-001', # 👈 UBAH MENJADI INI
+                                            model='imagen-3.0-generate-001',
                                             prompt=micro_prompt,
                                             base_image=base_rgb,
                                             mask_image=mask_image,
@@ -598,7 +599,9 @@ with col_right:
                                         
                                         st.success("✅ Revisi Selesai! (Aturan 'The One Edit Rule' berhasil diterapkan)")
                                         
+                                        # Tampilkan Hasil
                                         for generated_image in result.generated_images:
+                                            import io
                                             edited_img = Image.open(io.BytesIO(generated_image.image.image_bytes))
                                             
                                             col_res1, col_res2 = st.columns(2)
@@ -625,9 +628,9 @@ with col_right:
                                 st.warning("Mohon ketik Instruksi Mikro terlebih dahulu (Misal: 'Change to wood material').")
                         else:
                             st.warning("⚠️ Anda belum melukis area masking di atas gambar. Gunakan kuas untuk menandai area yang ingin diubah.")
-                except Exception:
-                     st.error("❌ File yang Anda unggah bukan format gambar yang bisa dibaca.")
-
+                except Exception as e:
+                     st.error(f"❌ File gagal diproses. Detail: {e}")
+    
     with tab_upscale:
         st.markdown("### 🔍 Ultra HD Upscaler (4K/8K)")
         st.info("Tingkatkan resolusi gambar final Anda tanpa pecah (pixelated) untuk kebutuhan cetak brosur atau presentasi direksi.")
