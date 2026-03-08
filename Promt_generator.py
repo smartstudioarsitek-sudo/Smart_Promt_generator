@@ -168,6 +168,20 @@ if 'init' not in st.session_state:
     st.session_state.teknik_cahaya = db.DB_TEKNIK_CAHAYA[0]
     st.session_state.detail = ""
     st.session_state.weathering = db.DB_WEATHERING[0]
+    # --- KAMUS RAHASIA CINEMATIC LIGHTING ---
+        KAMUS_LIGHTING = {
+            "☀️ Natural Daylight (Cerah & Bersih)": "clear bright natural daylight, crisp shadows, photorealistic, blue sky",
+            "🌅 Golden Hour (Senja Hangat & Mewah)": "golden hour lighting, warm sunlight, long soft shadows, cinematic sunset, glowing atmosphere",
+            "🌧️ Overcast/Rainy (Mendung Dramatis)": "overcast sky, moody dramatic lighting, soft diffused light, post-rain wet surfaces with puddles and subtle reflections",
+            "🌌 Blue Hour (Fajar/Senja Kebiruan)": "blue hour photography, twilight, cool ambient lighting, warm interior lights glowing through windows",
+            "🌃 Cinematic Night (Malam & Lampu Eksterior)": "night time architectural photography, cinematic artificial lighting, glowing exterior lights, deep shadows, stars in the sky",
+            "🚀 Cyberpunk Neon (Futuristik & Mencolok)": "cyberpunk style, vivid neon lights, dark background, sci-fi architectural lighting, dramatic contrast",
+            "📸 Studio Lighting (Pencahayaan Katalog)": "professional studio lighting, clean softbox illumination, neutral background, high contrast, sharp architectural details"
+        }
+        LIST_LIGHTING = list(KAMUS_LIGHTING.keys())
+        
+        # Dropdown UI untuk User
+        st.session_state.lighting_mood = st.selectbox("Pencahayaan & Atmosfer (Lighting Mood)", LIST_LIGHTING)
     st.session_state.kamera_film = db.DB_KAMERA_FILM[0]
     st.session_state.lensa_khusus = db.DB_LENSA_KHUSUS[0]
     st.session_state.tapak = db.DB_TAPAK[0]
@@ -428,40 +442,44 @@ with col_left:
                 # 2. Eksekusi Render
                 with st.spinner("✨ Google Imagen sedang melukis mahakarya arsitektur..."):
                     try:
-                        # (Pastikan Kakak sudah import & set API Key Google GenAI di paling atas file ya)
-                        # import google.generativeai as genai ATAU from google import genai
+                        # --- THE CINEMATIC INJECTOR ---
+                        # Mengambil terjemahan bahasa Inggris dari pilihan cuaca/lighting user
+                        cinematic_injector = KAMUS_LIGHTING[st.session_state.lighting_mood]
                         
-                        # Merakit prompt akhir dengan kualitas V-Ray
+                        # Merakit prompt akhir dengan kualitas V-Ray + Cuaca
                         final_prompt = (
                             f"Breathtaking architectural exterior photography, masterpiece of modern architecture. "
-                            f"{st.session_state.generated_prompt}. {st.session_state.detail}. "
-                            f"8k resolution, photorealistic textures, global illumination, V-Ray render."
+                            f"{st.session_state.generated_prompt}. "
+                            f"Lighting and Atmosphere: {cinematic_injector}. " # 👈 SUNTIKAN CUACA BEKERJA DI SINI!
+                            f"Details: {st.session_state.detail}. "
+                            f"Shot on DSLR 35mm lens, 8k resolution, photorealistic textures, global illumination, V-Ray render."
                         )
                         
-                        # Mengambil data dari Tab 1
+                        # Mengambil data gambar dan slider dari Tab 1
                         gambar_referensi = st.session_state.base_reference_image
-                        berat_slider = st.session_state.image_weight # Nilai dari slider 0.1 - 1.0
+                        berat_slider = st.session_state.image_weight 
                         
                         # MENGHUBUNGI MESIN GOOGLE IMAGEN 3
-                        # Catatan: Sesuaikan 'client' dengan cara Kakak memanggil API Google sebelumnya
                         result = client.models.generate_images(
                             model='imagen-3.0-generate-001',
                             prompt=final_prompt,
                             image=gambar_referensi,
-                            image_weight=berat_slider, # 👈 Slider bekerja di sini!
+                            image_weight=berat_slider, 
                             number_of_images=1,
                             output_mime_type="image/jpeg"
                         )
                         
                         # Menampilkan Gambar Hasil
                         for generated_image in result.generated_images:
+                            import io
                             final_img = Image.open(io.BytesIO(generated_image.image.image_bytes))
                             
                             st.success("✅ Render Berhasil! Google Imagen mengeksekusi visi Anda.")
-                            st.image(final_img, caption=f"Render Final (Image Weight: {berat_slider})", use_column_width=True)
+                            st.image(final_img, caption=f"Render Final (Cuaca: {st.session_state.lighting_mood} | Image Weight: {berat_slider})", use_column_width=True)
                             
                     except Exception as e:
                         st.error(f"❌ Gagal memanggil server Google Imagen: {e}")
+        
     with tab3:
         st.markdown('<div class="section-title">🌍 Site Context & Landscaping</div>', unsafe_allow_html=True)
         row_site1, row_site2 = st.columns(2)
