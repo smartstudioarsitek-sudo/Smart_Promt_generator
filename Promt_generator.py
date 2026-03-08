@@ -542,12 +542,7 @@ with col_right:
             if st.session_state.uploaded_sketch or st.session_state.use_ref:
                 st.warning("⚠️ **PENTING:** Karena Anda mengaktifkan *Vision Constraint* / *Color Masking*, pastikan Anda mengunggah gambar sketsa/masking tersebut secara manual ke chat AI bersamaan dengan prompt di atas!")
                 
-            st.markdown("---")
-            st.markdown("#### 2️⃣ Render Presisi via API (Stable Diffusion + ControlNet)")
-            st.write("Mengunci presisi geometri sketsa Anda secara absolut menggunakan infrastruktur Replicate Cloud.")
-                      
-                                                                                                                                                                      
-                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                                                                               
         else:
             st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
             
