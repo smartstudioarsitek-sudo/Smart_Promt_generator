@@ -374,7 +374,32 @@ with col_left:
         st.session_state.material = st.selectbox("Material Dasar Lingkungan", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
         st.session_state.weathering = st.selectbox("Kondisi Fisik / Keausan", db.DB_WEATHERING, index=db.DB_WEATHERING.index(st.session_state.weathering))
         st.session_state.detail = st.text_area("Detail Spesifik Khusus", value=st.session_state.detail, height=80)
-                    
+
+        st.markdown("---")
+        st.markdown("### 🎛️ Kendali Kreativitas AI (Imagen Parameter)")
+        
+        # Membuat Slider Interaktif
+        # Nilai 1.0 = Sangat kaku (mirip gambar asli)
+        # Nilai 0.1 = Sangat bebas (berhalusinasi / artistik)
+        image_weight_slider = st.slider(
+            "Tingkat Kepatuhan Geometri (Image Weight)",
+            min_value=0.1,
+            max_value=1.0,
+            value=0.6, # Default di tengah-tengah agak kaku
+            step=0.1,
+            help="Geser mendekati 0.1 (Kreatif) agar AI bebas merombak bentuk. Geser mendekati 1.0 (Kaku) agar AI menjiplak bentuk asli Revit secara ketat."
+        )
+        
+        # Simpan nilai ke memori agar bisa dibaca tombol Render nanti
+        st.session_state.image_weight = image_weight_slider
+        
+        # Visualisasi pintar di layar
+        if image_weight_slider >= 0.8:
+            st.info("📏 Mode Aktif: **Drafting Presisi**. Imagen akan menjiplak ketat bentuk geometri bangunan.")
+        elif image_weight_slider <= 0.4:
+            st.info("🎨 Mode Aktif: **Konsep Artistik**. Imagen akan banyak berhalusinasi dan merombak bentuk.")
+        else:
+            st.info("⚖️ Mode Aktif: **Seimbang**. Perpaduan antara geometri Revit dan kebebasan artistik AI.")
     with tab2:
         st.session_state.temp_warna = st.selectbox("Suhu Warna Lampu (Kelvin)", db.DB_TEMP_WARNA, index=db.DB_TEMP_WARNA.index(st.session_state.temp_warna))
         meta_flag = getattr(db, 'DB_VIEW_FLAGS', {}).get(st.session_state.view, {})
