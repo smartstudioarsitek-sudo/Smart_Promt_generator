@@ -530,28 +530,29 @@ with col_right:
             base_img_file = st.file_uploader("🖼️ Unggah Gambar Base Render", type=["png", "jpg", "jpeg", "jfif", "webp"], key="inpaint_upload")
             
             if base_img_file is not None:
-                try:
-                    import tempfile # Pastikan module ini diload
+                # --- LOGIKA MEMORI YANG BENAR (BEBAS BUG) ---
+                # Gunakan file_id untuk mendeteksi apakah Kakak mengunggah file baru
+                if "last_file_id" not in st.session_state or st.session_state.last_file_id != base_img_file.file_id:
+                    try:
+                        # 1. Buka gambar dan ubah ke RGBA (Wajib untuk Kanvas)
+                        raw_img = Image.open(base_img_file).convert("RGBA")
+                        
+                        # 2. Resize dengan metode Thumbnail (Paling aman untuk memori)
+                        raw_img.thumbnail((700, 700), Image.Resampling.LANCZOS)
+                        
+                        # 3. KUNCI MUTLAK: Gunakan .copy() agar gambar tidak dihapus oleh Python
+                        st.session_state.inpaint_bg = raw_img.copy()
+                        
+                        # 4. Catat ID file agar tidak diproses berulang-ulang
+                        st.session_state.last_file_id = base_img_file.file_id
+                        st.session_state.canvas_key = f"canvas_{base_img_file.file_id}"
+                    except Exception as e:
+                        st.error(f"❌ Gagal memproses gambar: {e}")
+                
+                # --- RENDER KANVAS DARI STATE YANG SUDAH AMAN ---
+                if "inpaint_bg" in st.session_state:
+                    bg_img = st.session_state.inpaint_bg
                     
-                    # 1. BACA GAMBAR DAN RESIZE
-                    raw_img = Image.open(base_img_file).convert("RGB")
-                    max_width_ui = 700
-                    if raw_img.width > max_width_ui:
-                        ratio = max_width_ui / float(raw_img.width)
-                        new_height = int(raw_img.height * ratio)
-                        resized_img = raw_img.resize((max_width_ui, new_height), Image.Resampling.LANCZOS)
-                    else:
-                        resized_img = raw_img.copy()
-
-                    # 2. THE NUCLEAR OPTION: TULIS KE HARD DRIVE SERVER
-                    # Kita hancurkan format .jfif dan paksa menjadi file fisik .png
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
-                        resized_img.save(tmp_file.name, format="PNG")
-                        temp_path = tmp_file.name
-                    
-                    # 3. BUKA KEMBALI SEBAGAI FILE FISIK BERSIH
-                    bg_image_final = Image.open(temp_path).convert("RGBA")
-
                     st.markdown("**1. Lukis Area Masking**")
             
                     col_canvas_tools, col_canvas = st.columns([1, 3])
@@ -560,29 +561,23 @@ with col_right:
                         st.caption("Gunakan kuas untuk menutupi area yang ingin diubah. Area putih akan diproses oleh AI.")
                         
                         st.markdown("---")
-                        # TOMBOL DARURAT JIKA KANVAS MASIH PUTIH
-                        if st.button("🔄 Refresh Kanvas", help="Klik ini jika gambar di kanvas masih berwarna putih kosong."):
-                            st.session_state["canvas_inpaint_key"] = random.randint(1000, 9999)
+                        if st.button("🗑️ Reset Kanvas", use_container_width=True):
+                            # Trik mereset kanvas adalah mengganti key-nya
+                            st.session_state.canvas_key = f"canvas_reset_{random.randint(1, 1000)}"
                             st.rerun()
                     
                     with col_canvas:
-                        # Sistem Kunci Statis yang bisa di-refresh manual
-                        if "canvas_inpaint_key" not in st.session_state:
-                            st.session_state["canvas_inpaint_key"] = "stabil_101"
-                            
-                        # Tampilkan sedikit preview asli di atas kanvas (untuk memastikan Python tidak buta)
-                        st.caption("👇 Jika di bawah ini masih putih, klik tombol 'Refresh Kanvas' di sebelah kiri.")
-                        
+                        # Kanvas sekarang pasti membaca gambar karena menggunakan variabel statis
                         canvas_result = st_canvas(
                             fill_color="rgba(255, 255, 255, 0.7)", 
                             stroke_width=stroke_width,
                             stroke_color="#FFFFFF", 
-                            background_image=bg_image_final, 
+                            background_image=bg_img, 
                             update_streamlit=True,
-                            height=bg_image_final.height, 
-                            width=bg_image_final.width,   
+                            height=bg_img.height, 
+                            width=bg_img.width,   
                             drawing_mode="freedraw",
-                            key=f"canvas_layer_{st.session_state['canvas_inpaint_key']}",
+                            key=st.session_state.canvas_key,
                         )
                     
                     st.markdown("---")
@@ -594,12 +589,13 @@ with col_right:
                             if micro_prompt:
                                 with st.spinner("Mengirim masker dan instruksi ke Google AI (Inpainting)..."):
                                     try:
-                                        # Buat mask hitam-putih
-                                        mask_array = np.zeros((bg_image_final.height, bg_image_final.width), dtype=np.uint8)
+                                        # Rakit Topeng Hitam Putih
+                                        mask_array = np.zeros((bg_img.height, bg_img.width), dtype=np.uint8)
                                         mask_array[canvas_result.image_data[:, :, 3] > 0] = 255
                                         mask_image = Image.fromarray(mask_array, mode="L")
                                         
-                                        base_rgb = bg_image_final.convert("RGB")
+                                        # Base Image dikembalikan ke RGB untuk dikirim ke Google
+                                        base_rgb = bg_img.convert("RGB")
                                         
                                         # Panggil Google Imagen 3
                                         result = client.models.edit_images(
@@ -643,8 +639,7 @@ with col_right:
                                 st.warning("Mohon ketik Instruksi Mikro terlebih dahulu (Misal: 'Change to wood material').")
                         else:
                             st.warning("⚠️ Anda belum melukis area masking di atas gambar. Gunakan kuas untuk menandai area yang ingin diubah.")
-                except Exception as e:
-                     st.error(f"❌ File gagal diproses. Detail: {e}")
+    
     
     with tab_upscale:
         st.markdown("### 🔍 Ultra HD Upscaler (4K/8K)")
