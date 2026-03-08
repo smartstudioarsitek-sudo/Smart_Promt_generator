@@ -313,31 +313,35 @@ with col_left:
     
     tab1, tab2, tab3, tab4 = st.tabs(["🏛️ Geometri & Material", "💡 Tata Cahaya", "🌍 Konteks Lingkungan", "📷 Sinema & Lensa"])
     with tab1:
-        st.markdown('<div class="section-title">📐 Geometry & Layer Upload</div>', unsafe_allow_html=True)
-        st.info("💡 Untuk hasil fotorealistis absolut, unggah 3 peta dasar (The Holy Trinity) dari software BIM/SketchUp Anda.")
+        st.markdown('<div class="section-title">📐 Geometry & Auto-Depth AI</div>', unsafe_allow_html=True)
+        st.info("💡 Unggah SATU screenshot warna dari Revit/SketchUp. AI kami akan otomatis memindai kedalaman ruang (Depth Map) di latar belakang.")
         
-        # 1. DEPTH MAP
-        uploaded_sketch_file = st.file_uploader("1️⃣ Upload Depth Map (Volume & Kedalaman)", type=["png", "jpg"], key="depth_up")
+        # 1. PENGGUNA HANYA UPLOAD 1 GAMBAR BIASA
+        uploaded_raw_image = st.file_uploader("🖼️ Upload Screenshot Bangunan 3D", type=["png", "jpg", "jpeg"], key="raw_image_up")
         
-        # 2. NORMAL MAP
-        uploaded_normal_file = st.file_uploader("2️⃣ Upload Normal Map (Lekukan & Arah Cahaya)", type=["png", "jpg"], key="normal_up")
-        
-        if uploaded_sketch_file is not None:
-            try:
-                sketch_img = Image.open(uploaded_sketch_file)
-                st.image(sketch_img, caption="Preview Depth Map / Geometri", use_column_width=True) 
-                st.session_state.uploaded_sketch = True
-                st.success("✅ Geometri terdeteksi! 'Vision Constraint' aktif.")
-                st.session_state.ai_control = st.selectbox("Metode Restriksi Struktural AI (Lapisan 2):", db.DB_AI_CONTROL, index=db.DB_AI_CONTROL.index(st.session_state.ai_control)) 
-            except Exception:
-                st.error("❌ File yang diunggah bukan gambar yang valid.")
-                st.session_state.uploaded_sketch = None
+        if uploaded_raw_image is not None:
+            raw_img = Image.open(uploaded_raw_image).convert("RGB")
+            
+            c_img1, c_img2 = st.columns(2)
+            with c_img1:
+                st.image(raw_img, caption="1. Gambar Asli (Input)", use_column_width=True)
+                
+            with c_img2:
+                with st.spinner("🤖 AI sedang mengekstrak Peta Kedalaman (Depth Map)..."):
+                    # PANGGIL MESIN LOKAL KITA DI SINI
+                    auto_depth_img = generate_auto_depth_map(raw_img)
+                    
+                    if auto_depth_img:
+                        st.image(auto_depth_img, caption="2. Auto-Depth Map (Siap untuk ControlNet)", use_column_width=True)
+                        # Simpan ke memori untuk dikirim ke Replicate nanti
+                        st.session_state.auto_depth_image = auto_depth_img
+                        st.session_state.uploaded_sketch = True # Trigger agar tombol render aktif
         else:
             st.session_state.uploaded_sketch = None
-            
+
         st.markdown("---")
         
-        # 3. SEMANTIC MASKING (Diperbaiki agar tidak dobel)
+        # 2. SEMANTIC MASKING (Tetap dipertahankan untuk opsi lanjutan)
         use_masking = st.checkbox("🎨 Aktifkan Semantic Color Masking (Material ID)", key="chk_color_masking")
         st.session_state.use_color_masking = use_masking
 
@@ -383,12 +387,14 @@ with col_left:
                 pbr_selector("🟢 Hijau/Bebas (Vegetasi/Lainnya)", "mask_green")
                                 
         st.markdown("---")
+        
+        # 3. PARAMETER GAYA ARSITEKTUR
         st.session_state.tipe = st.selectbox("Kategori Bangunan", db.DB_TIPE, index=db.DB_TIPE.index(st.session_state.tipe))
         st.session_state.gaya = st.selectbox("Gaya Arsitektur", db.DB_GAYA, index=db.DB_GAYA.index(st.session_state.gaya))
         st.session_state.material = st.selectbox("Material Dasar Lingkungan (Base Material)", db.DB_MATERIAL, index=db.DB_MATERIAL.index(st.session_state.material))
         st.session_state.weathering = st.selectbox("Kondisi Fisik / Keausan Material", db.DB_WEATHERING, index=db.DB_WEATHERING.index(st.session_state.weathering))
         st.session_state.detail = st.text_area("Detail Spesifik Khusus (Struktur/Bentuk)", value=st.session_state.detail, height=80)
-    
+        
     with tab2:
         st.session_state.temp_warna = st.selectbox("Suhu Warna Lampu (Kelvin)", db.DB_TEMP_WARNA, index=db.DB_TEMP_WARNA.index(st.session_state.temp_warna))
         meta_flag = getattr(db, 'DB_VIEW_FLAGS', {}).get(st.session_state.view, {})
@@ -519,9 +525,8 @@ with col_right:
                                 "num_inference_steps": 40,
                                 "guidance_scale": 4.5,
                                 "scheduler": "K_EULER_ANCESTRAL",
-                                
-                                # 🎯 LAYER 1: DEPTH (Selalu aktif karena ini pondasi geometri)
-                                "control_image_1": uploaded_sketch_file,
+                                # 🎯 LAYER 1: DEPTH (Membentuk Volume Massa)
+                                "control_image_1": st.session_state.auto_depth_image, # <--- Ambil gambar hasil ekstrak lokal
                                 "controlnet_1": "depth", 
                                 "controlnet_1_conditioning_scale": 0.45,
                             }
