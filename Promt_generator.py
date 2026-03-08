@@ -531,26 +531,22 @@ with col_right:
             
             if base_img_file is not None:
                 try:
-                    # 1. BACA GAMBAR
-                    temp_img = Image.open(base_img_file)
+                    # --- DEEP FIX 1: BACA GAMBAR SECARA BRUTAL KE MEMORI ---
+                    # Ini mencegah "Lazy Loading" yang bikin kanvas kosong
+                    raw_bytes = base_img_file.read()
                     
-                    # 2. RESIZE AGAR UI TIDAK BERAT
-                    max_width_ui = 600
-                    if temp_img.width > max_width_ui:
-                        ratio = max_width_ui / float(temp_img.width)
-                        new_height = int(temp_img.height * ratio)
-                        ui_img = temp_img.resize((max_width_ui, new_height), Image.Resampling.LANCZOS)
+                    # --- DEEP FIX 2: KONVERSI KE RGB MURNI ---
+                    # Membuang metadata aneh & transparansi (Alpha) yang tidak disukai Canvas
+                    pil_img = Image.open(io.BytesIO(raw_bytes)).convert("RGB")
+                    
+                    # --- DEEP FIX 3: RESIZE DENGAN INTEGER MUTLAK ---
+                    max_width_ui = 700
+                    if pil_img.width > max_width_ui:
+                        ratio = max_width_ui / float(pil_img.width)
+                        new_height = int(pil_img.height * ratio)
+                        bg_image = pil_img.resize((max_width_ui, new_height), Image.Resampling.LANCZOS)
                     else:
-                        ui_img = temp_img
-
-                    # 3. KUNCI ANTI-BLANK: CUCI BERSIH GAMBAR KE FORMAT PNG MURNI (RGBA)
-                    # Ini akan membuang semua metadata .jfif/.webp yang membuat layar menjadi putih
-                    clean_io = io.BytesIO()
-                    ui_img.save(clean_io, format="PNG")
-                    clean_io.seek(0)
-                    
-                    # Buka kembali sebagai gambar murni yang siap disajikan ke Canvas
-                    base_image_resized = Image.open(clean_io).convert("RGBA")
+                        bg_image = pil_img.copy()
 
                     st.markdown("**1. Lukis Area Masking**")
             
@@ -560,19 +556,19 @@ with col_right:
                         st.caption("Gunakan kuas untuk menutupi area yang ingin diubah. Area yang diwarnai putih akan diproses oleh AI.")
                     
                     with col_canvas:
-                        # Kunci dinamis agar kanvas selalu refresh jika gambar diganti
-                        canvas_key = f"canvas_{base_img_file.name}_{base_img_file.size}"
+                        # Kunci absolut agar Canvas di-refresh paksa setiap ada gambar baru
+                        safe_key = f"canvas_inpaint_{base_img_file.size}"
                         
                         canvas_result = st_canvas(
                             fill_color="rgba(255, 255, 255, 0.7)", 
                             stroke_width=stroke_width,
                             stroke_color="#FFFFFF", 
-                            background_image=base_image_resized,
+                            background_image=bg_image, 
                             update_streamlit=True,
-                            height=base_image_resized.height,
-                            width=base_image_resized.width,
+                            height=int(bg_image.height), # Paksa format integer
+                            width=int(bg_image.width),   # Paksa format integer
                             drawing_mode="freedraw",
-                            key=canvas_key,
+                            key=safe_key,
                         )
                     
                     st.markdown("---")
@@ -584,18 +580,16 @@ with col_right:
                             if micro_prompt:
                                 with st.spinner("Mengirim masker dan instruksi ke Google AI (Inpainting)..."):
                                     try:
-                                        # Rakit Masking Hitam-Putih
-                                        mask_array = np.zeros((base_image_resized.height, base_image_resized.width), dtype=np.uint8)
+                                        # Buat mask hitam-putih dari coretan user
+                                        mask_array = np.zeros((bg_image.height, bg_image.width), dtype=np.uint8)
                                         mask_array[canvas_result.image_data[:, :, 3] > 0] = 255
                                         mask_image = Image.fromarray(mask_array, mode="L")
                                         
-                                        base_rgb = base_image_resized.convert("RGB")
-                                        
-                                        # Panggil Imagen API
+                                        # Eksekusi AI Imagen 3.0
                                         result = client.models.edit_images(
                                             model='imagen-3.0-generate-001',
                                             prompt=micro_prompt,
-                                            base_image=base_rgb,
+                                            base_image=bg_image,
                                             mask_image=mask_image,
                                             config=types.EditImagesConfig(
                                                 number_of_images=1,
@@ -611,7 +605,7 @@ with col_right:
                                             
                                             col_res1, col_res2 = st.columns(2)
                                             with col_res1:
-                                                st.image(base_rgb, caption="Gambar Asli (Sebelum)", use_column_width=True)
+                                                st.image(bg_image, caption="Gambar Asli (Sebelum)", use_column_width=True)
                                             with col_res2:
                                                 st.image(edited_img, caption=f"Hasil Revisi: {micro_prompt}", use_column_width=True)
                                                 
@@ -628,14 +622,13 @@ with col_right:
                                             
                                     except Exception as e:
                                         st.error(f"Gagal memproses revisi inpainting: {e}")
-                                        st.info("Pastikan koneksi internet stabil dan kuota API Anda masih tersedia.")
                             else:
                                 st.warning("Mohon ketik Instruksi Mikro terlebih dahulu (Misal: 'Change to wood material').")
                         else:
                             st.warning("⚠️ Anda belum melukis area masking di atas gambar. Gunakan kuas untuk menandai area yang ingin diubah.")
                 except Exception as e:
                      st.error(f"❌ File gagal diproses. Detail: {e}")
-    
+      
     
     with tab_upscale:
         st.markdown("### 🔍 Ultra HD Upscaler (4K/8K)")
