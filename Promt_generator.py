@@ -72,7 +72,31 @@ KAMUS_PBR = {
 }
 
 LIST_MATERIAL_PBR = list(KAMUS_PBR.keys())
+# ==========================================
+# MESIN AI LOKAL (DEPTH ESTIMATOR)
+# ==========================================
+@st.cache_resource(show_spinner=False)
+def load_depth_estimator():
+    """
+    Memuat model MiDaS ke dalam RAM secara permanen agar proses selanjutnya instan.
+    Menggunakan model 'Small' agar Streamlit Cloud tidak kehabisan memori.
+    """
+    from transformers import pipeline
+    # Mengunduh model AI pembuat Depth Map berukuran kecil (~100MB)
+    estimator = pipeline("depth-estimation", model="Intel/dpt-small")
+    return estimator
 
+def generate_auto_depth_map(image_input):
+    """Fungsi ajaib pengubah foto flat menjadi Depth Map 3D"""
+    try:
+        estimator = load_depth_estimator()
+        # AI membaca jarak objek di dalam gambar
+        hasil = estimator(image_input)
+        # Mengembalikan gambar hitam putih (Depth Map)
+        return hasil['depth']
+    except Exception as e:
+        st.error(f"Gagal memproses Auto-Depth: {e}")
+        return None
 # ==========================================
 # 1. KONFIGURASI KEAMANAN & API
 # ==========================================
