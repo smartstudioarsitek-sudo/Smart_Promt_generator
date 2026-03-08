@@ -400,6 +400,7 @@ with col_left:
             st.info("🎨 Mode Aktif: **Konsep Artistik**. Imagen akan banyak berhalusinasi dan merombak bentuk.")
         else:
             st.info("⚖️ Mode Aktif: **Seimbang**. Perpaduan antara geometri Revit dan kebebasan artistik AI.")
+    
     with tab2:
         st.session_state.temp_warna = st.selectbox("Suhu Warna Lampu (Kelvin)", db.DB_TEMP_WARNA, index=db.DB_TEMP_WARNA.index(st.session_state.temp_warna))
         meta_flag = getattr(db, 'DB_VIEW_FLAGS', {}).get(st.session_state.view, {})
@@ -411,7 +412,56 @@ with col_left:
             st.session_state.fixture_ext = st.selectbox("Exterior Lighting Fixtures", db.DB_FIXTURE_EXT, index=db.DB_FIXTURE_EXT.index(st.session_state.fixture_ext))
             
         st.session_state.teknik_cahaya = st.selectbox("Teknik Render Cahaya Tambahan", db.DB_TEKNIK_CAHAYA, index=db.DB_TEKNIK_CAHAYA.index(st.session_state.teknik_cahaya))
-
+        
+        st.markdown('<div class="section-title">🖼️ Hasil Render (Google Imagen)</div>', unsafe_allow_html=True)
+        
+        # --- TOMBOL RENDER BARU KHUSUS IMAGEN ---
+        if st.button("🚀 RENDER SKETSA (GOOGLE IMAGEN)", use_container_width=True, type="primary"):
+            
+            # 1. Validasi Keamanan: Cek apakah gambar dan prompt sudah ada
+            if not st.session_state.get('uploaded_sketch') or 'base_reference_image' not in st.session_state:
+                st.warning("⚠️ Silakan upload gambar referensi 3D di Tab 1 terlebih dahulu.")
+            elif not st.session_state.get('generated_prompt'):
+                st.warning("⚠️ Silakan klik tombol 'SUSUN PROMPT NEURAL' terlebih dahulu.")
+            else:
+                
+                # 2. Eksekusi Render
+                with st.spinner("✨ Google Imagen sedang melukis mahakarya arsitektur..."):
+                    try:
+                        # (Pastikan Kakak sudah import & set API Key Google GenAI di paling atas file ya)
+                        # import google.generativeai as genai ATAU from google import genai
+                        
+                        # Merakit prompt akhir dengan kualitas V-Ray
+                        final_prompt = (
+                            f"Breathtaking architectural exterior photography, masterpiece of modern architecture. "
+                            f"{st.session_state.generated_prompt}. {st.session_state.detail}. "
+                            f"8k resolution, photorealistic textures, global illumination, V-Ray render."
+                        )
+                        
+                        # Mengambil data dari Tab 1
+                        gambar_referensi = st.session_state.base_reference_image
+                        berat_slider = st.session_state.image_weight # Nilai dari slider 0.1 - 1.0
+                        
+                        # MENGHUBUNGI MESIN GOOGLE IMAGEN 3
+                        # Catatan: Sesuaikan 'client' dengan cara Kakak memanggil API Google sebelumnya
+                        result = client.models.generate_images(
+                            model='imagen-3.0-generate-001',
+                            prompt=final_prompt,
+                            image=gambar_referensi,
+                            image_weight=berat_slider, # 👈 Slider bekerja di sini!
+                            number_of_images=1,
+                            output_mime_type="image/jpeg"
+                        )
+                        
+                        # Menampilkan Gambar Hasil
+                        for generated_image in result.generated_images:
+                            final_img = Image.open(io.BytesIO(generated_image.image.image_bytes))
+                            
+                            st.success("✅ Render Berhasil! Google Imagen mengeksekusi visi Anda.")
+                            st.image(final_img, caption=f"Render Final (Image Weight: {berat_slider})", use_column_width=True)
+                            
+                    except Exception as e:
+                        st.error(f"❌ Gagal memanggil server Google Imagen: {e}")
     with tab3:
         st.markdown('<div class="section-title">🌍 Site Context & Landscaping</div>', unsafe_allow_html=True)
         row_site1, row_site2 = st.columns(2)
