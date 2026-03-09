@@ -405,7 +405,7 @@ with col_left:
             st.session_state.signage_text = st.text_input("Teks Signage (Kosongkan jika tidak perlu):", value=st.session_state.signage_text, placeholder="Contoh: SMARTBIM STUDIO")
         with col_sig2:
             st.session_state.signage_style = st.selectbox("Gaya Material Teks:", db.DB_SIGNAGE, index=db.DB_SIGNAGE.index(st.session_state.signage_style))
-        # ---------------------------------------------------------
+       
         st.markdown("---")
         st.markdown("### 🎛️ Kendali Kreativitas AI (Imagen Parameter)")
         
