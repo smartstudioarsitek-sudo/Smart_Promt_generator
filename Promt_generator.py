@@ -24,7 +24,7 @@ except ImportError:
 # ==========================================
 # 0. KONFIGURASI HALAMAN (WAJIB PALING ATAS)
 # ==========================================
-st.set_page_config(page_title="SmartBIM Engineex", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="SmartArch_Render", layout="wide", initial_sidebar_state="expanded")
 
 # ==========================================
 # 0. KAMUS GLOBAL (PBR & CINEMATIC LIGHTING)
