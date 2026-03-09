@@ -231,6 +231,17 @@ def construct_prompt():
         core += f"Presentation Style: {style_description}. Cinematic Storytelling: {skenario}. "
         core += "\n[POST-PRODUCTION REQUIREMENT]: If supported by the generation engine, simulate or prepare output for Multi-pass EXR extraction including Z-Depth maps, Ambient Occlusion, Specular Highlights, and Cryptomatte ID masks for deep material logic editing. "
         
+    # ---------------------------------------------------------
+    # 💡 INJEKSI 4: MANDAT TIPOGRAFI / SIGNAGE
+    # ---------------------------------------------------------
+    signage_text = getattr(s, 'signage_text', '').strip()
+    signage_style = getattr(s, 'signage_style', db.DB_SIGNAGE[0])
+    
+    if signage_text and "Tanpa" not in signage_style:
+        style_clean = signage_style.split(" (")[0]
+        # Kami menggunakan tanda kutip ganda dan instruksi "STRICT MANDATE" agar AI mengejanya dengan benar
+        core += f"\n[TYPOGRAPHY MANDATE]: Architecturally integrate a {style_clean} displaying the exact text \"{signage_text}\" on the prominent facade or entrance. The text MUST be highly legible, perfectly spelled, and realistically integrated into the architectural materials.\n"
+
     if detail:
         core += f"\nAdditional architectural details: {detail}. "
         
