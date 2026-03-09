@@ -280,3 +280,12 @@ KAMUS_PBR = {
 
 # Membuat daftar nama material dalam bahasa Indonesia untuk ditampilkan di Dropdown
 LIST_MATERIAL_PBR = list(KAMUS_PBR.keys())
+
+DB_SIGNAGE = [
+    "Tanpa Teks (Polos)",
+    "Neon Signboard (Glowing Cyberpunk/Commercial)",
+    "Minimalist Steel Lettering (Modern/Corporate)",
+    "Engraved Stone Plaque (Classic/Monumental)",
+    "Backlit 3D Logo (Luxury/Retail)",
+    "Hand-painted Mural Text (Artistic/Industrial)"
+]
