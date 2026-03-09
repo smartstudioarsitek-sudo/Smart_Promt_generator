@@ -308,11 +308,12 @@ with col_left:
         
         # --- FITUR BARU: AUTO-DETECT DARI REVIT ---
         import os
+        from PIL import Image
         
-        # Lokasi tempat FastAPI menyimpan gambar dari Revit
+        # Lokasi PASTI tempat FastAPI menyimpan gambar dari Revit
         revit_img_path = r"D:\SmartArch_Server\tangkapan_dari_revit.jpg"
         
-        # Cek apakah gambar dari Revit ada di folder
+        # Cek apakah gambar dari Revit ada di folder tersebut
         if os.path.exists(revit_img_path):
             st.success("📸 Link Aktif: Model 3D dari Revit terdeteksi otomatis!")
             raw_img = Image.open(revit_img_path).convert("RGB")
@@ -321,14 +322,19 @@ with col_left:
             st.session_state.base_reference_image = raw_img
             
             # Tombol untuk menghapus gambar jika ingin foto ulang dari Revit
-            if st.button("🗑️ Hapus & Tunggu Foto Baru dari Revit"):
-                os.remove(revit_img_path)
+            if st.button("🗑️ Hapus & Tunggu Foto Baru dari Revit", use_container_width=True):
+                try:
+                    os.remove(revit_img_path)
+                except:
+                    pass
                 st.rerun()
                 
         else:
-            st.info("💡 Sedang menunggu kiriman gambar dari Plugin Revit SmartArch...")
-            # Fallback: Tetap sediakan tombol upload manual jika Revit sedang tidak dipakai
-            uploaded_raw_image = st.file_uploader("Atau Upload Manual File Gambar", type=["png", "jpg", "jpeg"])
+            st.info(f"💡 Sedang menunggu kiriman gambar dari Plugin Revit SmartArch...")
+            st.caption(f"(Mencari otomatis di: {revit_img_path})")
+            
+            # Fallback: Tetap sediakan tombol upload manual jika Revit sedang ditutup
+            uploaded_raw_image = st.file_uploader("Atau Upload Manual File Gambar", type=["png", "jpg", "jpeg"], key="manual_up")
             if uploaded_raw_image is not None:
                 raw_img = Image.open(uploaded_raw_image).convert("RGB")
                 st.image(raw_img, caption="Gambar Manual Input", use_container_width=True)
@@ -336,7 +342,7 @@ with col_left:
                 st.session_state.base_reference_image = raw_img
             else:
                 st.session_state.uploaded_sketch = None
-        
+                
         st.markdown("---")
         
         st.markdown("### 🎨 Spesifikasi Material (PBR)")
