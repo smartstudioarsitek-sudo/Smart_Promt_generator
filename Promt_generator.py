@@ -252,7 +252,7 @@ st.markdown("""
 
 col_head1, col_head2 = st.columns([8, 2])
 with col_head1:
-    st.markdown('<div class="header-box"><div style="display:flex; flex-direction:column;"><h1 class="title-text">SmartBIM Engineex <span style="color:#4338ca">v2.1</span></h1><p class="subtitle-text">Enterprise Prompt Builder & Concept Generator</p></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-box"><div style="display:flex; flex-direction:column;"><h1 class="title-text">SmartArch_Render <span style="color:#4338ca">v2.1</span></h1><p class="subtitle-text">Enterprise Prompt Builder & Concept Generator</p></div></div>', unsafe_allow_html=True)
 with col_head2:
     st.write("") 
     if st.button("🔄 Acak Parameter", use_container_width=True):
