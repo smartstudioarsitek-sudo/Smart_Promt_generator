@@ -150,15 +150,7 @@ if 'init' not in st.session_state:
     st.session_state.fixture_ext = db.DB_FIXTURE_EXT[0]
     st.session_state.teknik_cahaya = db.DB_TEKNIK_CAHAYA[0]
     st.session_state.detail = ""
-    st.markdown("---")
-        st.markdown("### 🔠 Tipografi & Signage (Reklame)")
-        st.info("💡 Ketik nama toko/bangunan agar AI merendernya pada fasad.")
-        
-        col_sig1, col_sig2 = st.columns([2, 2])
-        with col_sig1:
-            st.session_state.signage_text = st.text_input("Teks Signage (Kosongkan jika tidak perlu):", value=st.session_state.signage_text, placeholder="Contoh: SMARTBIM STUDIO")
-        with col_sig2:
-            st.session_state.signage_style = st.selectbox("Gaya Material Teks:", db.DB_SIGNAGE, index=db.DB_SIGNAGE.index(st.session_state.signage_style))
+    
     st.session_state.weathering = db.DB_WEATHERING[0]
     st.session_state.signage_text = ""
     st.session_state.signage_style = db.DB_SIGNAGE[0]
@@ -401,6 +393,19 @@ with col_left:
         
         st.session_state.detail = st.text_area("Detail Spesifik Khusus", value=st.session_state.detail, height=80)
 
+        # ---------------------------------------------------------
+        # 💡 INJEKSI UI: TIPOGRAFI / SIGNAGE
+        # ---------------------------------------------------------
+        st.markdown("---")
+        st.markdown("### 🔠 Tipografi & Signage (Reklame)")
+        st.info("💡 Ketik nama toko/bangunan agar AI merendernya pada fasad.")
+        
+        col_sig1, col_sig2 = st.columns([2, 2])
+        with col_sig1:
+            st.session_state.signage_text = st.text_input("Teks Signage (Kosongkan jika tidak perlu):", value=st.session_state.signage_text, placeholder="Contoh: SMARTBIM STUDIO")
+        with col_sig2:
+            st.session_state.signage_style = st.selectbox("Gaya Material Teks:", db.DB_SIGNAGE, index=db.DB_SIGNAGE.index(st.session_state.signage_style))
+        # ---------------------------------------------------------
         st.markdown("---")
         st.markdown("### 🎛️ Kendali Kreativitas AI (Imagen Parameter)")
         
