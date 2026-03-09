@@ -545,10 +545,24 @@ with col_right:
                                 
                         except Exception as e:
                             st.error(f"❌ Gagal memanggil server Google Imagen: {e}")
+            # ---------------------------------------------------------
+            # 💡 INJEKSI 2: UI TOMBOL KUNCI KONSISTENSI (LOOPING)
+            # Indentasi sejajar lurus dengan: if st.button("🚀 RENDER SKETSA (GOOGLE IMAGEN)"...)
+            # ---------------------------------------------------------
+            if "latest_render_for_loop" in st.session_state:
+                st.markdown("---")
+                st.markdown('<div class="section-title">🔄 Kunci Identitas Subjek Lintas Sudut</div>', unsafe_allow_html=True)
+                st.info("💡 Ingin melihat bangunan ini dari sudut pandang lain (misal: Bird's Eye ke Eye Level)? Kunci gambar ini sebagai referensi utama agar desain fasad dan material tidak berubah.")
+                
+                if st.button("🔒 Jadikan Referensi Utama untuk Render Selanjutnya", use_container_width=True):
+                    # Timpa gambar referensi awal (Revit/Upload) dengan hasil render AI yang baru
+                    st.session_state.base_reference_image = st.session_state.latest_render_for_loop
+                    st.session_state.uploaded_sketch = True
+                    st.success("✅ Memori terkunci! Gambar di atas sekarang menjadi Base Image. Silakan ubah 'Kamera & Perspektif' di Tab 4, lalu klik tombol Render lagi.")
                             
         else:
-            st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")
-
+            st.info("👈 Silakan jelajahi 4 Tab di sebelah kiri, sesuaikan parameter, lalu klik **SUSUN PROMPT NEURAL**.")                 
+ 
     with tab_inpaint:
         st.markdown("### 🖌️ Kanvas Revisi (Inpainting)")
         st.info("Unggah gambar hasil render final Anda (dari Gemini/Midjourney/API), lalu 'lukis' area yang ingin direvisi.")
