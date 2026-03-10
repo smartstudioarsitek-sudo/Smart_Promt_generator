@@ -306,9 +306,6 @@ with col_left:
         st.markdown('<div class="section-title">📐 Referensi Visual & Material PBR</div>', unsafe_allow_html=True)
         st.info("💡 Unggah screenshot 3D (Revit/SketchUp) sebagai panduan visual untuk Google Imagen.")
         
-        # Upload referensi polos
-        uploaded_raw_image = st.file_uploader("🖼️ Upload Referensi Bangunan", type=["png", "jpg", "jpeg"], key="raw_image_up")
-        
         # --- FITUR BARU: AUTO-DETECT DARI REVIT ---
         import os
         from PIL import Image
