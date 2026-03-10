@@ -3,7 +3,8 @@ import random
 import os
 import io
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True  # Memaksa sistem tetap membaca gambar walau datanya sedikit rusak/terpotong
 import json
 import logging
 
@@ -337,9 +338,9 @@ with col_left:
             uploaded_raw_image = st.file_uploader("Atau Upload Manual File Gambar", type=["png", "jpg", "jpeg"], key="manual_up")
             if uploaded_raw_image is not None:
                 raw_img = Image.open(uploaded_raw_image).convert("RGB")
-                st.image(raw_img, caption="Gambar Manual Input", use_container_width=True)
-                st.session_state.uploaded_sketch = True 
-                st.session_state.base_reference_image = raw_img
+                st.image(raw_img, caption="Gambar Manual Input", use_column_width=True) # UBAH JADI INI
+                st.session_state.uploaded_sketch = True
+            
             else:
                 st.session_state.uploaded_sketch = None
         # ---------------------------------------------------------
