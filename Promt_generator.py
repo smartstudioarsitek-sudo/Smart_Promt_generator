@@ -345,7 +345,22 @@ with col_left:
                 st.session_state.base_reference_image = raw_img
             else:
                 st.session_state.uploaded_sketch = None
-                
+        # ---------------------------------------------------------
+        # 💡 INJEKSI 3: FITUR UPLOADER MOODBOARD (STYLE TRANSFER)
+        # ---------------------------------------------------------
+        st.markdown("---")
+        st.markdown('<div class="section-title">🎨 Referensi Gaya (Moodboard Style)</div>', unsafe_allow_html=True)
+        st.info("💡 Unggah gambar referensi untuk meniru palet warna, filter, dan atmosfer pencahayaan (Style Transfer).")
+        uploaded_moodboard = st.file_uploader("🖼️ Upload Moodboard / Referensi Warna", type=["png", "jpg", "jpeg"], key="moodboard_up")
+        
+        if uploaded_moodboard is not None:
+            mood_img = Image.open(uploaded_moodboard).convert("RGB")
+            st.image(mood_img, caption="Moodboard Aktif (Akan memengaruhi palet warna & pencahayaan render)", use_container_width=True)
+            st.session_state.moodboard_image = mood_img
+            st.session_state.use_ref = True # Otomatis centang checkbox "Lampirkan Referensi Style" di bawah
+        else:
+            st.session_state.moodboard_image = None
+            st.session_state.use_ref = False    
         st.markdown("---")
         
         st.markdown("### 🎨 Spesifikasi Material (PBR)")
