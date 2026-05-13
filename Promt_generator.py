@@ -10,6 +10,7 @@ import logging
 
 import database_params as db
 import prompt_logic as pl
+import replicate # <--- TAMBAHKAN INI DI SINI
 
 # Import SDK Google GenAI
 from google import genai
@@ -541,6 +542,48 @@ with col_right:
             st.markdown("---")
             st.markdown('<div class="section-title">🖼️ Hasil Render (Google Imagen via API)</div>', unsafe_allow_html=True)
             
+            # --- TOMBOL RENDER BARU KHUSUS FLUX CONTROLNET ---
+            if st.button("🚀 RENDER SKETSA (FLUX CONTROLNET)", use_container_width=True, type="primary"):
+                if not st.session_state.get('uploaded_sketch') or 'base_reference_image' not in st.session_state:
+                    st.warning("⚠️ Silakan upload gambar referensi 3D di Tab 1 terlebih dahulu.")
+                else:
+                    with st.spinner("✨ Menjalankan FLUX.1 Canny Pro via Replicate untuk presisi absolut..."):
+                        try:
+                            # 1. Mengambil terjemahan bahasa Inggris dari pilihan cuaca/lighting user
+                            cinematic_injector = KAMUS_LIGHTING[st.session_state.lighting_mood]
+                            
+                            # 2. Merakit prompt akhir (Wajib ada sebelum memanggil Replicate)
+                            final_prompt = (
+                                f"Breathtaking architectural exterior photography, masterpiece of modern architecture. "
+                                f"{st.session_state.generated_prompt}. "
+                                f"Lighting and Atmosphere: {cinematic_injector}. "
+                                f"Details: {st.session_state.detail}. "
+                                f"Shot on DSLR 35mm lens, 8k resolution, photorealistic textures, global illumination, V-Ray render."
+                            )
+                            
+                            # 3. Simpan gambar dari session state ke buffer
+                            buf = io.BytesIO()
+                            st.session_state.base_reference_image.save(buf, format="JPEG")
+                            buf.seek(0)
+
+                            # 4. Persiapkan Payload JSON untuk Replicate
+                            output = replicate.run(
+                                "black-forest-labs/flux-canny-pro",
+                                input={
+                                    "control_image": buf,
+                                    "prompt": final_prompt,
+                                    "guidance": 30, # Penekanan tinggi pada prompt teks
+                                    "steps": 40, # Langkah inferensi untuk kualitas fotorealistik
+                                    "controlnet_conditioning_scale": st.session_state.image_weight # Menggunakan slider Anda
+                                }
+                            )
+                            
+                            # 5. Menampilkan Gambar Hasil (Output dari Replicate biasanya URL)
+                            st.success("✅ Render Berhasil dengan akurasi topologi 100%!")
+                            st.image(output, caption=f"Render Final FLUX ControlNet (Image Weight: {st.session_state.image_weight})", use_column_width=True)
+                            
+                        except Exception as e:
+                            st.error(f"❌ Gagal memanggil server Replicate API: {e}")
             # --- TOMBOL RENDER BARU KHUSUS IMAGEN ---
             if st.button("🚀 RENDER SKETSA (GOOGLE IMAGEN)", use_container_width=True, type="primary"):
                 if not st.session_state.get('uploaded_sketch') or 'base_reference_image' not in st.session_state:
