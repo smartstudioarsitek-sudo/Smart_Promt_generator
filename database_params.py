@@ -272,6 +272,10 @@ KAMUS_PBR = {
     "Keramik Matte": "Matte ceramic tiles, subtle grout lines, low specular, uniform albedo",
     "Keramik Glossy": "Glossy ceramic tiles, high specular, sharp reflections, clean grout normal map",
     
+    # --- Material Super-Mewah (Luxury) ---
+    "Marmer Putih Mewah (Subsurface)": "High-gloss dielectric white marble, pronounced subsurface scattering, realistic internal light bounce, subtle natural veining with high contrast ratio",
+    "Aksen Emas (Logam Mulia)": "Pure metallic workflow, highly anisotropic reflections, deep relief carving ambient occlusion, highly reflective gold trim, sharp specular highlights",
+    
     # --- Lainnya ---
     "Aspal Jalan": "Rough asphalt road surface, high frequency noise displacement, low albedo, subtle specular on wet patches",
     "Rumput Sintetis": "Artificial turf grass, subsurface scattering, individual blade normal map, matte albedo",
