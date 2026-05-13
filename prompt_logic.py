@@ -165,21 +165,27 @@ def construct_prompt():
         
     camera_setup = kamera_film.split(" (")[0]
     
-    # 🛠️ FASE 3: INJEKSI STANDAR 2G STUDIO (Koreksi Distorsi Optik)
+    # 🛠️ FASE 3: INJEKSI STANDAR & OPTIK PRESISI
     tilt_shift_mandate = ""
     if "Tilt-Shift" in lensa_khusus:
         tilt_shift_mandate = (
-            "[OPTICAL CORRECTION MANDATE]: Enforce absolute 2-point perspective. "
+            "[OPTICAL CORRECTION MANDATE]: Enforce absolute 2-point perspective. 24mm Tilt-Shift Lens. "
             "Vertical lines of the architecture MUST remain perfectly straight, plumb, and parallel to the frame edges. "
-            "NEGATIVE PROMPT: --no perspective distortion, converging vertical lines, keystone effect, warped structural geometry. "
+            "NEGATIVE PROMPT: --no perspective distortion, converging vertical lines, keystone effect, fisheye lens, warped structural geometry. "
         )
     
+    # INJEKSI BARU: Mandat Simetri & Refleksi Raytracing
+    symmetry_mandate = (
+        "[REFLECTANCE & SYMMETRY MANDATE]: Floor surfaces must have a high-gloss dielectric finish reflecting ceiling geometry "
+        "and light fixtures with absolute mathematical symmetry and raytracing-level precision. Zero distortion, diffraction, or asymmetrical melting in reflections."
+    )
+
     composition_macros = (
         "[CINEMATIC COMPOSITION DIRECTIVES]: Strictly apply Rule of Thirds composition. "
         "Integrate natural leading lines converging towards the main architectural subject. "
-        "Establish spatial scale using realistic depth of field with subtle blurred foreground elements (e.g., foliage or silhouettes). "
-        f"{tilt_shift_mandate}"
+        f"{tilt_shift_mandate} {symmetry_mandate}"
     )
+    
     # --- 4. MATERIAL & KONTEKS SITE ---
     context_setup = f"Physically Based Base Materials: {pbr_material_desc}. Material Condition/Weathering: {weathering.split(' (')[0]}. "
     context_setup += f"Site Context: {tapak.split(' (')[0]}. Landscaping: {vegetasi.split(' (')[0]}. "
